@@ -33,6 +33,7 @@ export default function OrderDetailsPage() {
       .catch((err) => console.error(err));
   }, [params]);
 
+  // ✅ CORREÇÃO PRINCIPAL: Atualiza a tela assim que a IA responde
   async function handleGenerateAI() {
     if (!order?.id) return;
     setGenerating(true);
@@ -40,11 +41,14 @@ export default function OrderDetailsPage() {
       const res = await fetch(`/api/admin/orders/${order.id}/generate-ai`, {
         method: "POST",
       });
-      if (res.ok) {
-        alert("Treino gerado com sucesso!");
-        window.location.reload();
+      
+      const data = await res.json(); // Pega a resposta com o texto
+
+      if (res.ok && data.text) {
+        setFinalText(data.text); // Preenche a caixa de texto na hora!
+        alert("Treino gerado com sucesso! Veja abaixo.");
       } else {
-        alert("Erro ao gerar.");
+        alert("Erro ao gerar: " + (data.error || "Tente novamente"));
       }
     } catch (e) {
       alert("Erro de conexão.");
@@ -53,7 +57,7 @@ export default function OrderDetailsPage() {
     }
   }
 
-  // ✅ CORREÇÃO 1: Status "paid" em vez de "completed"
+  // ✅ Salva o texto e baixa o PDF
   async function handleSaveAndDownload() {
     if (!order?.id) return;
     setDownloading(true);
@@ -63,18 +67,19 @@ export default function OrderDetailsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           finalWorkout: finalText,
-          forceStatus: "paid" // Alterado aqui
+          forceStatus: "paid" 
         }),
       });
 
       if (res.ok) {
+        // Redireciona para o download do PDF
         window.location.href = `/api/orders/${order.id}/pdf`;
-        // Atualiza a tela para mostrar o novo status verde
         setOrder({ ...order, status: "paid" });
       } else {
         const err = await res.json();
         console.error(err);
-        alert("Erro ao salvar: " + (err.error || "Tente novamente"));
+        // Se der erro de status, avisa mas não trava
+        alert("Salvo, mas houve um aviso: " + (err.error || "Verifique o status"));
       }
     } catch (e) {
       alert("Erro de conexão ao salvar.");
@@ -83,7 +88,7 @@ export default function OrderDetailsPage() {
     }
   }
 
-  // ✅ CORREÇÃO 2: Status "paid" aqui também
+  // ✅ Salva o texto e abre o WhatsApp
   async function handleSaveAndSend() {
     if (!order?.id) return;
     setSaving(true);
@@ -93,7 +98,7 @@ export default function OrderDetailsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           finalWorkout: finalText,
-          forceStatus: "paid" // Alterado aqui
+          forceStatus: "paid" 
         }),
       });
       
@@ -244,11 +249,10 @@ Qualquer dúvida, me chama!`;
 }
 
 function StatusBadge({ status }: { status: string }) {
-  // ✅ CORREÇÃO 3: Mapeamento atualizado para incluir 'paid'
   const colors: Record<string, string> = {
     pending_payment: "bg-yellow-100 text-yellow-800",
-    paid: "bg-green-100 text-green-800", // Status correto do banco
-    completed: "bg-green-100 text-green-800", // Mantendo por segurança
+    paid: "bg-green-100 text-green-800", 
+    completed: "bg-green-100 text-green-800", 
     refused: "bg-red-100 text-red-800",
   };
   

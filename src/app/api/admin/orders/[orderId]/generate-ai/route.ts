@@ -13,7 +13,6 @@ export async function POST(
   try {
     const params = await props.params;
     
-    // 1. Busca o pedido
     const order = await prisma.order.findUnique({
       where: { id: params.orderId },
     });
@@ -22,7 +21,6 @@ export async function POST(
       return NextResponse.json({ error: "Pedido não encontrado" }, { status: 404 });
     }
 
-    // 2. Prepara dados do PAR-Q
     const parq = (order.parqJson as any) || {};
     let parqAlerts = "";
     if (parq.chestPain) parqAlerts += "- ALERTA: Sente dores no peito\n";
@@ -30,7 +28,6 @@ export async function POST(
     if (parq.jointProblem) parqAlerts += "- ALERTA: Problema articular\n";
     if (parq.medication) parqAlerts += "- ALERTA: Uso de medicação cardíaca\n";
     
-    // 3. Prompt para a IA
     const promptSistema = `
       Você é o Felipe Ferreira Personal (CREF 071550-RJ).
       Crie um treino seguro e eficiente.
@@ -53,9 +50,8 @@ export async function POST(
       2. Use emojis e formatação para WhatsApp.
     `;
 
-    // 4. Chama a OpenAI
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // Se der erro de modelo, troque por "gpt-3.5-turbo"
+      model: "gpt-4o-mini",
       messages: [
         { role: "system", content: promptSistema },
         { role: "user", content: "Gerar treino." },
@@ -64,17 +60,19 @@ export async function POST(
 
     const treinoGerado = completion.choices[0].message.content || "";
 
-    // 5. Salva no banco (SEM ALTERAR STATUS para não dar erro de Enum)
+    // Salva o rascunho
     await prisma.order.update({
       where: { id: params.orderId },
       data: {
         aiDraftJson: treinoGerado, 
-        // Se ainda não tem treino final, usa o da IA
-        finalWorkoutJson: order.finalWorkoutJson ? undefined : treinoGerado,
+        // Força a atualização se o usuário clicou no botão
+        finalWorkoutJson: treinoGerado, 
       },
     });
 
-    return NextResponse.json({ ok: true });
+    // ✅ AQUI A MUDANÇA: Retornamos o texto gerado para o frontend usar
+    return NextResponse.json({ ok: true, text: treinoGerado });
+
   } catch (error) {
     console.error("Erro na IA:", error);
     return NextResponse.json({ error: "Erro ao gerar treino" }, { status: 500 });
