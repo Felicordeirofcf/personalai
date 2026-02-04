@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 
-export default function SendWhatsAppButton({ orderId }: { orderId: string }) {
+type Props = {
+  orderId: string;
+  phone?: string; // ✅ aceita phone para não quebrar quando a página passa a prop
+};
+
+export default function SendWhatsAppButton({ orderId, phone: _phone }: Props) {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string>("");
 

@@ -1,20 +1,38 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { renderWorkoutPdfBuffer } from "@/lib/pdf";
+// Importamos a função do arquivo que você já corrigiu (src/lib/pdf.tsx)
+import { renderWorkoutPdfBuffer } from "@/lib/pdf"; 
 
-export async function GET(_: Request, { params }: { params: { orderId: string } }) {
-  const order = await prisma.order.findUnique({ where: { id: params.orderId } });
-  if (!order) return NextResponse.json({ error: "not found" }, { status: 404 });
+export async function GET(
+  req: Request,
+  props: { params: Promise<{ orderId: string }> }
+) {
+  const params = await props.params;
 
-  const workout = order.finalWorkoutJson ?? order.aiDraftJson;
-  if (!workout) return NextResponse.json({ error: "workout not ready" }, { status: 400 });
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id: params.orderId },
+    });
 
-  const buf = await renderWorkoutPdfBuffer(workout, { fullName: order.fullName });
+    if (!order || !order.aiDraftJson) {
+      return NextResponse.json({ error: "Pedido ou treino não encontrado" }, { status: 404 });
+    }
 
-  return new NextResponse(buf, {
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="treino-${order.id.slice(-8).toUpperCase()}.pdf"`,
-    },
-  });
+    // Usamos a função auxiliar que já cria o PDF
+    const buffer = await renderWorkoutPdfBuffer(order.aiDraftJson, {
+      fullName: order.fullName,
+    });
+
+    // O helper já retorna um Buffer, só precisamos garantir o cast para enviar na resposta
+    return new NextResponse(buffer as any, {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="treino-${order.fullName}.pdf"`,
+      },
+    });
+
+  } catch (error) {
+    console.error("Erro ao gerar PDF:", error);
+    return NextResponse.json({ error: "Falha na geração do PDF" }, { status: 500 });
+  }
 }

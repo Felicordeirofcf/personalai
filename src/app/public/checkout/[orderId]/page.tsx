@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
-export default async function CheckoutPage({ params }: { params: { orderId: string } }) {
-  const order = await prisma.order.findUnique({ where: { id: params.orderId } });
+export default async function CheckoutPage(props: { params: Promise<{ orderId: string }> }) {
+    const params = await props.params;
+const order = await prisma.order.findUnique({ where: { id: params.orderId } });
   if (!order) return <div className="p-8">Pedido não encontrado.</div>;
 
   const pay = getPaymentInstructions(order.id, order.priceCents);

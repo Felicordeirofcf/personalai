@@ -3,8 +3,9 @@ import { prisma } from "@/lib/db";
 import path from "path";
 import fs from "fs/promises";
 
-export async function POST(req: Request, { params }: { params: { orderId: string } }) {
-  const form = await req.formData();
+export async function POST(req: Request, props: { params: Promise<{ orderId: string }> }) {
+    const params = await props.params;
+const form = await req.formData();
   const file = form.get("receipt") as File | null;
   const paymentNote = (form.get("paymentNote") as string | null) ?? null;
 

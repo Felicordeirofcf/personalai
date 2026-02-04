@@ -11,8 +11,9 @@ const labels: Record<string, string> = {
   sent: "Enviado ✅",
 };
 
-export default async function StatusPage({ params }: { params: { orderId: string } }) {
-  const order = await prisma.order.findUnique({ where: { id: params.orderId } });
+export default async function StatusPage(props: { params: Promise<{ orderId: string }> }) {
+    const params = await props.params;
+const order = await prisma.order.findUnique({ where: { id: params.orderId } });
   if (!order) return <div className="p-8">Pedido não encontrado.</div>;
 
   return (
