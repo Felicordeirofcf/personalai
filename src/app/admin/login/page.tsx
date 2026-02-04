@@ -1,29 +1,93 @@
-export default function AdminLoginPage() {
-  return (
-    <div className="min-h-[70vh] flex items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm space-y-4">
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">Entrar no Admin</h1>
-          <p className="text-sm text-zinc-600 mt-1">Use o email e senha do .env / Render env.</p>
-        </div>
+"use client";
 
-        <form action="/api/admin/login" method="POST" className="space-y-3">
-          <input
-            name="email"
-            placeholder="Email"
-            className="w-full rounded-xl border border-zinc-200 p-3 text-sm outline-none focus:ring-2 focus:ring-zinc-200"
-          />
-          <input
-            name="password"
-            placeholder="Senha"
-            type="password"
-            className="w-full rounded-xl border border-zinc-200 p-3 text-sm outline-none focus:ring-2 focus:ring-zinc-200"
-          />
-          <button className="w-full rounded-xl bg-black px-3 py-3 text-sm font-semibold text-white hover:opacity-90">
-            Entrar
-          </button>
-        </form>
-      </div>
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+// ✅ CORREÇÃO: Removemos o CardTitle da importação
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+
+export default function AdminLogin() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        router.push("/admin");
+        router.refresh();
+      } else {
+        setError(data.error || "Login falhou");
+      }
+    } catch (err) {
+      setError("Erro de conexão");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-zinc-50 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          {/* ✅ CORREÇÃO: Usamos h2 direto em vez de CardTitle */}
+          <h2 className="text-center text-xl font-bold text-zinc-900">
+            Acesso Restrito
+          </h2>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="admin@local"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="password">Senha</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+
+            {error && (
+              <div className="rounded-md bg-red-50 p-3 text-sm text-red-600">
+                {error}
+              </div>
+            )}
+
+            <Button className="w-full" type="submit" disabled={loading}>
+              {loading ? "Entrando..." : "Entrar"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }
