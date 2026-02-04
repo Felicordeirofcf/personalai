@@ -82,7 +82,7 @@ export default function OrderDetailsPage() {
             console.log("Chamando gerador de PDF local...");
             
             // O fetch acontece no navegador do Admin, então ele consegue ver o localhost
-            const pdfRes = await fetch('http://127.0.0.1:5000/api/gerar-pdf', {
+            const pdfRes = await fetch('https://treino-ai-pdf.onrender.com/api/gerar-pdf', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
