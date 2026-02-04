@@ -32,7 +32,7 @@ export async function POST(req: Request) {
     const order = await prisma.order.create({
       data: {
         status: "pending_payment",
-        priceCents,
+        priceCents, // Salva em centavos no banco (ex: 4000)
 
         fullName: data.fullName,
         email: data.email,
@@ -47,6 +47,7 @@ export async function POST(req: Request) {
         limitations: data.limitations ?? "",
 
         parqJson: data.parqJson,
+        paymentProvider: "asaas", // Opcional: marca que foi Asaas
       },
     });
 
@@ -56,17 +57,19 @@ export async function POST(req: Request) {
       fullName: order.fullName,
       email: order.email,
       whatsapp: order.whatsapp,
-      priceCents: order.priceCents,
+      // ⚠️ CORREÇÃO CRUCIAL AQUI:
+      // A função espera 'valueBRL' (reais), mas o banco tem 'priceCents' (centavos).
+      valueBRL: Number(order.priceCents) / 100, 
       appBaseUrl,
     });
 
     // 3) salva referência do checkout no pedido
+    // Ajustei para usar os campos padrões (paymentRef/paymentUrl) para evitar erro de schema
     await prisma.order.update({
       where: { id: order.id },
       data: {
-        asaasCheckoutId: checkout.id,
-        asaasCheckoutUrl: checkout.checkoutUrl,
-        asaasExternalRef: order.id,
+        paymentRef: checkout.id,           // ID do pagamento no Asaas
+        paymentUrl: checkout.checkoutUrl,  // Link para pagar
       },
     });
 
@@ -75,6 +78,7 @@ export async function POST(req: Request) {
       { status: 200 },
     );
   } catch (err: any) {
+    console.error("Erro ao criar pedido:", err);
     return NextResponse.json(
       { ok: false, error: err?.message ?? "Erro ao criar pedido" },
       { status: 400 },

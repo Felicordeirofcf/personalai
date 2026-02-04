@@ -12,7 +12,6 @@ const envSchema = z.object({
   PIX_KEY: z.string().default(""),
   BANK_INSTRUCTIONS: z.string().default(""),
   APP_BASE_URL: z.string().default("http://localhost:3000"),
-  DATABASE_URL: z.string(),
 });
 
 export const env = envSchema.parse(process.env);
