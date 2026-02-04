@@ -8,6 +8,8 @@ const OrderSchema = z.object({
   fullName: z.string().min(3),
   email: z.string().email(),
   whatsapp: z.string().min(8),
+  // ✅ Recebe o CPF do Frontend
+  cpf: z.string().min(11),
 
   goal: z.string().min(2),
   location: z.string().min(2),
@@ -17,7 +19,6 @@ const OrderSchema = z.object({
   equipment: z.string().min(1),
   limitations: z.string().optional().default(""),
 
-  // ⚠️ CORREÇÃO: O frontend envia como "parq", não "parqJson"
   parq: z.any(), 
 });
 
@@ -29,7 +30,7 @@ export async function POST(req: Request) {
     const priceCents = Number(process.env.PRODUCT_PRICE_CENTS ?? "4000");
     const appBaseUrl = process.env.APP_BASE_URL ?? "http://localhost:3000";
 
-    // 1) cria order no seu banco
+    // 1) cria order no seu banco (SEM salvar CPF para não quebrar o banco atual)
     const order = await prisma.order.create({
       data: {
         status: "pending_payment",
@@ -47,19 +48,20 @@ export async function POST(req: Request) {
         equipment: data.equipment,
         limitations: data.limitations ?? "",
 
-        // ⚠️ CORREÇÃO: Mapeamos o "parq" recebido para o campo "parqJson" do banco
         parqJson: data.parq ?? {}, 
         
         paymentProvider: "asaas",
       },
     });
 
-    // 2) cria checkout no Asaas
+    // 2) cria checkout no Asaas enviando o CPF
     const checkout = await createCheckoutForOrder({
       orderId: order.id,
       fullName: order.fullName,
       email: order.email,
       whatsapp: order.whatsapp,
+      // ✅ Passa o CPF para a função do Asaas
+      cpfCnpj: data.cpf,
       valueBRL: Number(order.priceCents) / 100, 
       appBaseUrl,
     });

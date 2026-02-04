@@ -15,6 +15,8 @@ const schema = z.object({
   fullName: z.string().min(3, "Nome muito curto"),
   email: z.string().email("Email inválido"),
   whatsapp: z.string().min(8, "Telefone inválido"),
+  // ✅ NOVO: Campo CPF obrigatório (mínimo 11 dígitos)
+  cpf: z.string().min(11, "CPF inválido (apenas números)"),
 
   goal: z.string().min(2, "Informe o objetivo"),
   location: z.enum(["casa", "academia", "misto"]),
@@ -24,7 +26,6 @@ const schema = z.object({
   equipment: z.string().min(2, "Informe os equipamentos"),
   limitations: z.string().optional().default(""),
 
-  // PAR-Q básico
   parq_chestPain: z.boolean().default(false),
   parq_dizziness: z.boolean().default(false),
   parq_jointProblem: z.boolean().default(false),
@@ -75,6 +76,8 @@ export default function ParqWizard() {
       parq_otherReason: false,
       limitations: "",
       parq_notes: "",
+      // ✅ Default value para CPF
+      cpf: "",
     },
   });
 
@@ -93,8 +96,12 @@ export default function ParqWizard() {
   async function onSubmit(data: FormData) {
     setLoading(true);
     try {
+      // Limpa o CPF (remove pontos e traços se o usuário digitou)
+      const cleanCpf = data.cpf.replace(/\D/g, "");
+
       const payload = {
         ...data,
+        cpf: cleanCpf, // Envia CPF limpo
         limitations: data.limitations || "",
         parq: {
           chestPain: data.parq_chestPain,
@@ -139,7 +146,6 @@ export default function ParqWizard() {
       <CardHeader className="flex flex-col gap-2 px-4 pt-6 sm:px-6">
         <div className="flex items-center justify-between">
           <div className="text-lg font-extrabold text-zinc-900">Avaliação Inicial</div>
-          {/* CORREÇÃO 1: Removido variant="secondary" */}
           <Badge className="bg-zinc-100 text-zinc-600 hover:bg-zinc-200">
             Passo {step}/3
           </Badge>
@@ -175,7 +181,7 @@ export default function ParqWizard() {
                   <p className="text-xs text-red-500">{form.formState.errors.whatsapp.message}</p>
                 )}
               </div>
-              <div className="space-y-1.5 md:col-span-2">
+              <div className="space-y-1.5">
                 <Label>Email</Label>
                 <Input
                   {...form.register("email")}
@@ -187,13 +193,26 @@ export default function ParqWizard() {
                   <p className="text-xs text-red-500">{form.formState.errors.email.message}</p>
                 )}
               </div>
+              {/* ✅ NOVO: Campo de CPF */}
+              <div className="space-y-1.5">
+                <Label>CPF (Somente números)</Label>
+                <Input
+                  {...form.register("cpf")}
+                  placeholder="000.000.000-00"
+                  className="bg-zinc-50/50"
+                  maxLength={14}
+                />
+                {form.formState.errors.cpf && (
+                  <p className="text-xs text-red-500">{form.formState.errors.cpf.message}</p>
+                )}
+              </div>
             </div>
 
             <div className="flex justify-end pt-2">
               <Button
                 className="w-full sm:w-auto"
                 onClick={async () => {
-                  const ok = await form.trigger(["fullName", "whatsapp", "email"]);
+                  const ok = await form.trigger(["fullName", "whatsapp", "email", "cpf"]);
                   if (ok) setStep(2);
                 }}
               >
@@ -203,6 +222,7 @@ export default function ParqWizard() {
           </>
         )}
 
+        {/* ... Os outros passos (2 e 3) continuam iguais ... */}
         {step === 2 && (
           <>
             <div className="grid gap-4 md:grid-cols-2">
@@ -313,7 +333,6 @@ export default function ParqWizard() {
                 Questionário de Prontidão (PAR-Q)
               </div>
 
-              {/* CORREÇÃO 2: Adicionado ?? false em todos os values */}
               <div className="grid gap-3">
                 <Check
                   label="Algum médico já disse que você possui algum problema de coração?"
