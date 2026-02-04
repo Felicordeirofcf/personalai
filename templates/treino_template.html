@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        /* Configuração da Página para PDF */
+        @page { size: A4; margin: 2cm; }
+
+        body { 
+            font-family: Helvetica, sans-serif; 
+            color: #333; 
+            line-height: 1.4;
+        }
+
+        /* --- CABEÇALHO (Layout em Tabela para xhtml2pdf) --- */
+        .header-table {
+            width: 100%;
+            background-color: #f4f4f4;
+            border-left: 6px solid #d32f2f; /* Aquele detalhe vermelho */
+            margin-bottom: 30px;
+        }
+
+        .header-cell {
+            padding: 15px;
+            vertical-align: middle;
+        }
+
+        .logo-img {
+            width: 100px; /* Tamanho fixo para a logo não estourar */
+            height: auto;
+        }
+
+        h1 { margin: 0; font-size: 22px; color: #333; text-transform: uppercase; }
+        .meta { margin-top: 5px; font-size: 14px; color: #555; }
+
+        /* --- CONTEÚDO --- */
+        .intro { margin-bottom: 20px; text-align: justify; }
+
+        /* --- LISTA DE EXERCÍCIOS --- */
+        h3 { color: #d32f2f; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-top: 30px; }
+
+        .exercicio-card { 
+            border-bottom: 1px dotted #ccc; 
+            padding: 12px 0; 
+            page-break-inside: avoid; /* Não quebra o exercício no meio da página */
+        }
+
+        .exercicio-titulo { 
+            font-weight: bold; 
+            font-size: 15px; 
+            color: #000;
+        }
+
+        /* Botão do YouTube */
+        .yt-btn {
+            text-decoration: none;
+            color: #d32f2f; /* Vermelho YouTube */
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        
+        .detalhes { color: #666; font-size: 13px; margin-top: 3px; }
+    </style>
+</head>
+<body>
+
+    <table class="header-table" cellspacing="0" cellpadding="0">
+        <tr>
+            <td class="header-cell" style="width: 120px;">
+                {% if logo_path %}
+                    <img src="{{ logo_path }}" class="logo-img" />
+                {% else %}
+                    {% endif %}
+            </td>
+
+            <td class="header-cell">
+                <h1>PLANEJAMENTO DE TREINO</h1>
+                <div class="meta">
+                    <strong>Aluno:</strong> {{ aluno_nome }}<br>
+                    <strong>Data:</strong> {{ data_atual }}
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="intro">
+        {{ texto_intro|safe }}
+    </div>
+
+    <h3>LISTA DE EXERCÍCIOS</h3>
+    
+    {% for item in lista_exercicios %}
+        <div class="exercicio-card">
+            <div class="exercicio-titulo">
+                {{ item.nome }}
+                
+                {% if item.is_exercicio %}
+                    <a href="{{ item.link_youtube }}" class="yt-btn" target="_blank">
+                        ▶ VER VÍDEO
+                    </a>
+                {% endif %}
+            </div>
+            
+            {% if item.detalhes %}
+                <div class="detalhes">{{ item.detalhes }}</div>
+            {% endif %}
+        </div>
+    {% endfor %}
+
+</body>
+</html>

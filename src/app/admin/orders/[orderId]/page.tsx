@@ -33,7 +33,7 @@ export default function OrderDetailsPage() {
       .catch((err) => console.error(err));
   }, [params]);
 
-  // ✅ CORREÇÃO PRINCIPAL: Atualiza a tela assim que a IA responde
+  // ✅ Atualiza a tela assim que a IA responde
   async function handleGenerateAI() {
     if (!order?.id) return;
     setGenerating(true);
@@ -42,10 +42,10 @@ export default function OrderDetailsPage() {
         method: "POST",
       });
       
-      const data = await res.json(); // Pega a resposta com o texto
+      const data = await res.json();
 
       if (res.ok && data.text) {
-        setFinalText(data.text); // Preenche a caixa de texto na hora!
+        setFinalText(data.text);
         alert("Treino gerado com sucesso! Veja abaixo.");
       } else {
         alert("Erro ao gerar: " + (data.error || "Tente novamente"));
@@ -57,11 +57,13 @@ export default function OrderDetailsPage() {
     }
   }
 
-  // ✅ Salva o texto e baixa o PDF
+  // ✅ NOVA LÓGICA: Salva no banco (Render) e baixa do Python Local
   async function handleSaveAndDownload() {
     if (!order?.id) return;
     setDownloading(true);
+
     try {
+      // 1. Salva no seu banco de dados (Next.js/Render)
       const res = await fetch(`/api/admin/orders/${order.id}/save-final`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -72,13 +74,48 @@ export default function OrderDetailsPage() {
       });
 
       if (res.ok) {
-        // Redireciona para o download do PDF
-        window.location.href = `/api/orders/${order.id}/pdf`;
+        // Atualiza status na tela
         setOrder({ ...order, status: "paid" });
+
+        // 2. Chama o Python Local (app.py) para gerar o PDF
+        try {
+            console.log("Chamando gerador de PDF local...");
+            
+            // O fetch acontece no navegador do Admin, então ele consegue ver o localhost
+            const pdfRes = await fetch('http://127.0.0.1:5000/api/gerar-pdf', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    nome: order.fullName,
+                    treino: finalText // Manda o texto que está no textarea
+                })
+            });
+
+            if (!pdfRes.ok) throw new Error("Erro no servidor Python Local");
+
+            // 3. Recebe o arquivo e força o download
+            const blob = await pdfRes.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            
+            // Limpa o nome para o arquivo
+            const safeName = order.fullName.replace(/[^a-zA-Z0-9]/g, '_');
+            link.setAttribute('download', `Treino_${safeName}.pdf`);
+            
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+
+        } catch (pyErr) {
+            console.error("Erro no PDF:", pyErr);
+            alert("Treino SALVO no sistema, mas houve erro ao gerar o PDF.\n\nVerifique se o arquivo 'app.py' está rodando na sua máquina.");
+        }
+
       } else {
         const err = await res.json();
         console.error(err);
-        // Se der erro de status, avisa mas não trava
         alert("Salvo, mas houve um aviso: " + (err.error || "Verifique o status"));
       }
     } catch (e) {
@@ -220,7 +257,7 @@ Qualquer dúvida, me chama!`;
                       variant="outline" 
                       className="w-full border-zinc-300"
                     >
-                      {downloading ? "Salvando e Baixando..." : "📄 Salvar e Baixar PDF"}
+                      {downloading ? "Salvando e Baixando..." : "📄 Salvar e Baixar PDF (Python)"}
                     </Button>
                   </div>
 
