@@ -2,12 +2,17 @@ import { NextResponse } from "next/server";
 import { verifyAdminCredentials, setAdminCookie, signAdminToken } from "@/lib/auth";
 
 export async function POST(req: Request) {
-  const { email, password } = await req.json();
+  try {
+    const { email, password } = await req.json();
 
-  const ok = await verifyAdminCredentials(email, password);
-  if (!ok) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    if (!verifyAdminCredentials(String(email || ""), String(password || ""))) {
+      return NextResponse.json({ ok: false }, { status: 401 });
+    }
 
-  const token = signAdminToken();
-  setAdminCookie(token);
-  return NextResponse.json({ ok: true });
+    const res = NextResponse.json({ ok: true });
+    await setAdminCookie(res, signAdminToken());
+    return res;
+  } catch (e: any) {
+    return NextResponse.json({ ok: false, error: e?.message ?? "Erro" }, { status: 400 });
+  }
 }
