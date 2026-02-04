@@ -6,13 +6,13 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// ✅ CORREÇÃO 1: Tipagem correta do params como Promise (Exigência do Next.js novo)
+// ✅ CORREÇÃO 1: 'params' agora é uma Promise (regra nova do Next.js 15)
 export async function POST(
   req: Request,
   props: { params: Promise<{ orderId: string }> }
 ) {
   try {
-    const params = await props.params; // ✅ Aguardamos o params
+    const params = await props.params; // Aguardamos o params ser resolvido
     
     const order = await prisma.order.findUnique({
       where: { id: params.orderId },
@@ -24,6 +24,7 @@ export async function POST(
 
     const parq = (order.parqJson as any) || {};
     
+    // Monta os alertas de saúde
     let parqAlerts = "";
     if (parq.chestPain) parqAlerts += "- ALERTA: Sente dores no peito (CUIDADO REDOBRADO)\n";
     if (parq.dizziness) parqAlerts += "- ALERTA: Tem tonturas/desmaios\n";
@@ -62,14 +63,14 @@ export async function POST(
       ],
     });
 
-    // ✅ CORREÇÃO 2: Garantimos que nunca seja null (usa string vazia se falhar)
+    // ✅ CORREÇÃO 2: Garante que seja uma string vazia se vier nulo, para não quebrar o banco
     const treinoGerado = completion.choices[0].message.content || "";
 
     await prisma.order.update({
       where: { id: params.orderId },
       data: {
         aiDraftJson: treinoGerado, 
-        // Se finalWorkoutJson for null, preenchemos. Se já tiver texto, mantemos o undefined para não sobrescrever.
+        // Se ainda não tiver treino final, preenchemos. Se já tiver, não mexemos.
         finalWorkoutJson: order.finalWorkoutJson ? undefined : treinoGerado,
       },
     });
