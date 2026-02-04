@@ -17,7 +17,8 @@ const OrderSchema = z.object({
   equipment: z.string().min(1),
   limitations: z.string().optional().default(""),
 
-  parqJson: z.any(),
+  // ⚠️ CORREÇÃO: O frontend envia como "parq", não "parqJson"
+  parq: z.any(), 
 });
 
 export async function POST(req: Request) {
@@ -32,7 +33,7 @@ export async function POST(req: Request) {
     const order = await prisma.order.create({
       data: {
         status: "pending_payment",
-        priceCents, // Salva em centavos no banco (ex: 4000)
+        priceCents, 
 
         fullName: data.fullName,
         email: data.email,
@@ -46,30 +47,29 @@ export async function POST(req: Request) {
         equipment: data.equipment,
         limitations: data.limitations ?? "",
 
-        parqJson: data.parqJson,
-        paymentProvider: "asaas", // Opcional: marca que foi Asaas
+        // ⚠️ CORREÇÃO: Mapeamos o "parq" recebido para o campo "parqJson" do banco
+        parqJson: data.parq ?? {}, 
+        
+        paymentProvider: "asaas",
       },
     });
 
-    // 2) cria checkout no Asaas (PIX + cartão)
+    // 2) cria checkout no Asaas
     const checkout = await createCheckoutForOrder({
       orderId: order.id,
       fullName: order.fullName,
       email: order.email,
       whatsapp: order.whatsapp,
-      // ⚠️ CORREÇÃO CRUCIAL AQUI:
-      // A função espera 'valueBRL' (reais), mas o banco tem 'priceCents' (centavos).
       valueBRL: Number(order.priceCents) / 100, 
       appBaseUrl,
     });
 
-    // 3) salva referência do checkout no pedido
-    // Ajustei para usar os campos padrões (paymentRef/paymentUrl) para evitar erro de schema
+    // 3) salva referência do checkout
     await prisma.order.update({
       where: { id: order.id },
       data: {
-        paymentRef: checkout.id,           // ID do pagamento no Asaas
-        paymentUrl: checkout.checkoutUrl,  // Link para pagar
+        paymentRef: checkout.id,
+        paymentUrl: checkout.checkoutUrl,
       },
     });
 
