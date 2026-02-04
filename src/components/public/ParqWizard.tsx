@@ -182,7 +182,7 @@ export default function ParqWizard() {
         <div className="mt-2 rounded-lg bg-[#F5F8FA] p-4 text-sm text-zinc-600 leading-relaxed border border-[#E1E8ED]">
           Ao preencher os dados abaixo, você garante um planejamento exclusivo (nada de treino de gaveta!) e ganha 
           <strong className="text-[#1B3B5A] font-bold"> 1 mês de acompanhamento semanal diretamente comigo no WhatsApp </strong> 
-          para ajustes. Tudo isso por apenas <strong className="text-zinc-900">R$ 60,00</strong>.
+          para ajustes. Tudo isso por apenas <strong className="text-zinc-900">R$ 50,00</strong>.
         </div>
 
       </CardHeader>
