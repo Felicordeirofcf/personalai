@@ -1,152 +1,194 @@
-import { redirect } from "next/navigation";
-import { prisma } from "@/lib/db";
-import { requireAdmin } from "@/lib/auth";
-import ParqResumo from "@/components/admin/ParqResumo";
-import WorkoutReviewPanel from "@/components/admin/WorkoutReviewPanel";
+"use client";
 
-type Props = {
-  params: Promise<Record<string, string | string[] | undefined>>;
-};
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+// ✅ CORREÇÃO 1: Removemos CardTitle da importação
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
 
-function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    draft: "Rascunho",
-    pending_payment: "Aguardando pagamento",
-    paid_pending_review: "Pago • Revisão pendente",
-    ai_draft_ready: "IA pronta",
-    coach_adjusted: "Ajustado",
-    sent: "Enviado",
-  };
-  const label = map[status] ?? status;
+export default function OrderDetailsPage() {
+  const params = useParams();
+  const router = useRouter();
+  const [order, setOrder] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [saving, setSaving] = useState(false);
+  
+  const [finalText, setFinalText] = useState("");
 
-  const cls =
-    status === "pending_payment"
-      ? "bg-amber-50 text-amber-700 border-amber-200"
-      : status === "sent"
-        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-        : status === "coach_adjusted"
-          ? "bg-sky-50 text-sky-700 border-sky-200"
-          : status === "ai_draft_ready"
-            ? "bg-violet-50 text-violet-700 border-violet-200"
-            : "bg-zinc-50 text-zinc-700 border-zinc-200";
+  useEffect(() => {
+    // Nota: O params do client-side já vem resolvido, mas garantimos que orderId existe
+    if (!params?.orderId) return;
+
+    fetch(`/api/admin/orders/${params.orderId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        setOrder(data);
+        // Garante que seja string, mesmo se vier null do banco
+        setFinalText((data.finalWorkoutJson as string) || (data.aiDraftJson as string) || "");
+        setLoading(false);
+      })
+      .catch((err) => console.error(err));
+  }, [params]);
+
+  async function handleGenerateAI() {
+    setGenerating(true);
+    try {
+      const res = await fetch(`/api/admin/orders/${order.id}/generate-ai`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        alert("Treino gerado com sucesso!");
+        window.location.reload();
+      } else {
+        alert("Erro ao gerar.");
+      }
+    } catch (e) {
+      alert("Erro de conexão.");
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  async function handleSaveAndSend() {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/orders/${order.id}/save-final`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          finalWorkout: finalText,
+          forceStatus: "completed"
+        }),
+      });
+      
+      if (res.ok) {
+        const textEncoded = encodeURIComponent(finalText);
+        const linkZap = `https://wa.me/55${order.whatsapp.replace(/\D/g, "")}?text=${textEncoded}`;
+        window.open(linkZap, "_blank");
+        router.refresh();
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) return <div className="p-8">Carregando pedido...</div>;
+  if (!order) return <div className="p-8">Pedido não encontrado.</div>;
+
+  const parq = order.parqJson || {};
 
   return (
-    <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${cls}`}>
-      {label}
-    </span>
+    <div className="min-h-screen bg-zinc-50 p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-zinc-900">Pedido: {order.fullName}</h1>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-sm text-zinc-500">{order.id}</span>
+            <StatusBadge status={order.status} />
+          </div>
+        </div>
+        <Button className="bg-white text-zinc-900 border border-zinc-200 hover:bg-zinc-100" onClick={() => router.push("/admin")}>Voltar</Button>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              {/* ✅ CORREÇÃO 2: Trocamos CardTitle por h3 estilizado */}
+              <h3 className="font-semibold text-lg leading-none tracking-tight">Dados do Aluno</h3>
+            </CardHeader>
+            <CardContent className="text-sm space-y-2">
+              <p><strong>Email:</strong> {order.email}</p>
+              <p><strong>WhatsApp:</strong> {order.whatsapp}</p>
+              <p><strong>Objetivo:</strong> {order.goal}</p>
+              <p><strong>Local:</strong> {order.location}</p>
+              <p><strong>Equipamentos:</strong> {order.equipment}</p>
+              <p><strong>Limitações:</strong> {order.limitations || "Nenhuma"}</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-red-100 bg-red-50/30">
+            <CardHeader>
+               <h3 className="font-semibold text-lg leading-none tracking-tight text-red-800">PAR-Q (Saúde)</h3>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <CheckItem label="Dor no peito?" value={parq.chestPain} />
+              <CheckItem label="Tontura/Desmaio?" value={parq.dizziness} />
+              <CheckItem label="Problema Ósseo?" value={parq.jointProblem} />
+              <CheckItem label="Medicação Cardíaca?" value={parq.medication} />
+              <p className="pt-2 text-zinc-600 italic">Obs: {parq.notes || "-"}</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-6">
+          <Card className="border-blue-200 bg-blue-50">
+            <CardHeader>
+               <h3 className="font-semibold text-lg leading-none tracking-tight text-blue-900">Controle do Personal</h3>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+              <p className="text-sm text-blue-700">
+                Gere o treino com IA baseada no PAR-Q acima, edite se necessário e envie.
+              </p>
+              
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleGenerateAI} 
+                  disabled={generating}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700"
+                >
+                  {generating ? "🤖 Criando Treino..." : "✨ Gerar Treino com IA"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="flex flex-col h-full">
+             <CardHeader className="flex flex-row items-center justify-between">
+                <h3 className="font-semibold text-lg leading-none tracking-tight">Treino Final</h3>
+                <div className="text-xs text-zinc-400">Edite antes de enviar</div>
+             </CardHeader>
+             <CardContent className="flex-1">
+                <Textarea 
+                  value={finalText}
+                  onChange={(e) => setFinalText(e.target.value)}
+                  className="min-h-[400px] font-mono text-sm"
+                  placeholder="O treino gerado aparecerá aqui..."
+                />
+                
+                <div className="pt-4">
+                  <Button 
+                    onClick={handleSaveAndSend}
+                    disabled={saving}
+                    className="w-full bg-green-600 hover:bg-green-700 font-bold"
+                  >
+                    {saving ? "Salvando..." : "✅ Salvar e Abrir WhatsApp"}
+                  </Button>
+                </div>
+             </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
   );
 }
 
-export default async function AdminOrderPage({ params }: Props) {
-  const ok = await requireAdmin();
-  if (!ok) redirect("/admin/login");
+function StatusBadge({ status }: { status: string }) {
+  // ✅ CORREÇÃO 3: Removemos variant="outline" do Badge e usamos apenas o padrão
+  return <Badge className="bg-zinc-100 text-zinc-800 hover:bg-zinc-200 border border-zinc-200">{status}</Badge>;
+}
 
-  const p = await params;
-  const raw = p.orderId ?? p.id;
-  const orderId = Array.isArray(raw) ? raw[0] : raw;
-
-  if (!orderId) {
-    return (
-      <div className="space-y-2 p-6">
-        <h1 className="text-xl font-bold">Pedido inválido</h1>
-        <p className="text-sm text-zinc-600">Parâmetro ausente.</p>
-        <pre className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-xs overflow-auto">
-          {JSON.stringify(p, null, 2)}
-        </pre>
-      </div>
-    );
-  }
-
-  const order = await prisma.order.findUnique({ where: { id: orderId } });
-  if (!order) return <div className="p-6">Pedido não encontrado.</div>;
-
+function CheckItem({ label, value }: { label: string, value: boolean }) {
   return (
-    <div className="space-y-6">
-      <header className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-              Pedido
-            </div>
-            <div className="mt-1 flex flex-wrap items-center gap-3">
-              <h1 className="text-2xl font-extrabold tracking-tight">
-                {order.fullName}
-              </h1>
-              <StatusBadge status={order.status} />
-            </div>
-            <div className="mt-2 font-mono text-xs text-zinc-500">{order.id}</div>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <a
-              href={`/status/${order.id}`}
-              className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm hover:bg-zinc-50"
-            >
-              Ver página do aluno
-            </a>
-          </div>
-        </div>
-
-        <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-700">
-          <b>Fluxo:</b> gerar treino com IA → revisar/editar → copiar e enviar manualmente no WhatsApp.
-        </div>
-      </header>
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
-          <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-            Cliente
-          </div>
-          <div className="mt-3 space-y-1">
-            <div className="text-lg font-bold">{order.fullName}</div>
-            <div className="text-sm text-zinc-600">{order.email}</div>
-            <div className="text-sm text-zinc-600">WhatsApp: {order.whatsapp}</div>
-          </div>
-        </div>
-
-        <div className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
-          <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-            Pagamento
-          </div>
-          <div className="mt-3 space-y-2 text-sm text-zinc-700">
-            <div>
-              <b>Valor:</b> R$ {(order.priceCents / 100).toFixed(2)}
-            </div>
-            <div>
-              <b>Observação:</b> {order.paymentNote ?? "—"}
-            </div>
-            <div>
-              <b>Comprovante:</b> {order.receiptPath ?? "—"}
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
-          <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-            Dados do pedido
-          </div>
-          <div className="mt-3 space-y-2 text-sm text-zinc-700">
-            <div><b>Objetivo:</b> {order.goal}</div>
-            <div><b>Local:</b> {order.location}</div>
-            <div><b>Frequência:</b> {order.frequency}</div>
-            <div><b>Experiência:</b> {order.experience}</div>
-            <div><b>Tempo/dia:</b> {order.timePerDayMin} min</div>
-            <div><b>Equipamentos:</b> {order.equipment}</div>
-            <div><b>Limitações:</b> {order.limitations}</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
-        <ParqResumo data={order.parqJson as any} />
-      </div>
-
-      <WorkoutReviewPanel
-        orderId={order.id}
-        aiDraftJson={order.aiDraftJson}
-        finalWorkoutJson={order.finalWorkoutJson}
-        status={order.status}
-      />
+    <div className="flex items-center justify-between border-b border-red-100 pb-1">
+      <span>{label}</span>
+      <span className={value ? "font-bold text-red-600" : "text-green-600"}>
+        {value ? "SIM ⚠️" : "Não"}
+      </span>
     </div>
   );
 }
