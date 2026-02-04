@@ -3,11 +3,24 @@ import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { generateWorkoutDraft } from "@/lib/openai";
 
-export async function POST(req: Request, { params }: { params: { orderId: string } }) {
-  if (!requireAdmin()) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+export async function POST(
+  req: Request,
+  props: { params: Promise<{ orderId: string }> }
+) {
+  // 1. Aguarda a resolução dos parâmetros (obrigatório no Next.js novo)
+  const params = await props.params;
 
-  const order = await prisma.order.findUnique({ where: { id: params.orderId } });
-  if (!order) return NextResponse.json({ error: "not found" }, { status: 404 });
+  if (!requireAdmin()) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  const order = await prisma.order.findUnique({
+    where: { id: params.orderId },
+  });
+
+  if (!order) {
+    return NextResponse.json({ error: "not found" }, { status: 404 });
+  }
 
   const draft = await generateWorkoutDraft({
     fullName: order.fullName,
@@ -26,5 +39,7 @@ export async function POST(req: Request, { params }: { params: { orderId: string
     data: { aiDraftJson: draft, status: "ai_draft_ready" },
   });
 
-  return NextResponse.redirect(new URL(`/admin/orders/${params.orderId}`, req.url));
+  return NextResponse.redirect(
+    new URL(`/admin/orders/${params.orderId}`, req.url)
+  );
 }
