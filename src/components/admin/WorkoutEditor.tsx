@@ -23,7 +23,7 @@ export default function WorkoutEditor({ orderId, initialJson }: { orderId: strin
     <div className="space-y-3">
       <div className="text-sm font-extrabold">Editor do treino (JSON)</div>
       <div className="text-sm text-zinc-600">
-        A IA gera um rascunho estruturado. Você pode ajustar aqui e salvar.
+        Você pode ajustar aqui e salvar.
       </div>
       <Textarea value={text} onChange={(e) => setText(e.target.value)} className="min-h-[420px]" />
       <Button onClick={save} disabled={saving}>

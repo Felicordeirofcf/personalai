@@ -7,15 +7,14 @@ export default function Home() {
     <main className="mx-auto max-w-5xl px-4 py-10">
       <div className="mb-8 grid gap-6 md:grid-cols-2 md:items-center">
         <div className="space-y-3">
-          <Badge>Sem videochamada • Você não precisa aparecer</Badge>
+          <Badge>Treino + Acompanhamento</Badge>
 
           <h1 className="text-4xl font-extrabold tracking-tight">
             Consultoria de Treino Online com revisão profissional
           </h1>
 
           <p className="text-zinc-600">
-            Você preenche o PAR-Q e informações básicas, paga via Pix/transferência e eu confirmo manualmente.
-            A IA gera um rascunho do treino, eu ajusto e envio para você.
+            Você preenche sua avaliação completa e realiza o pagamento. Em seguida, eu analiso seu perfil e monto um planejamento de treino estratégico e exclusivo para seus objetivos.
           </p>
 
           <div className="grid gap-3 md:grid-cols-3">
@@ -36,7 +35,7 @@ export default function Home() {
             <Card>
               <CardContent className="p-4">
                 <div className="text-sm font-extrabold">3) Entrega</div>
-                <div className="text-sm text-zinc-600">IA + revisão + PDF</div>
+                <div className="text-sm text-zinc-600">PDF + Acompanhamento</div>
               </CardContent>
             </Card>
           </div>

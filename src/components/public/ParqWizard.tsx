@@ -15,7 +15,7 @@ const schema = z.object({
   fullName: z.string().min(3, "Nome muito curto"),
   email: z.string().email("Email inválido"),
   whatsapp: z.string().min(8, "Telefone inválido"),
-  // ✅ NOVO: Campo CPF obrigatório (mínimo 11 dígitos)
+  // ✅ CPF obrigatório para o Asaas
   cpf: z.string().min(11, "CPF inválido (apenas números)"),
 
   goal: z.string().min(2, "Informe o objetivo"),
@@ -76,7 +76,6 @@ export default function ParqWizard() {
       parq_otherReason: false,
       limitations: "",
       parq_notes: "",
-      // ✅ Default value para CPF
       cpf: "",
     },
   });
@@ -96,12 +95,11 @@ export default function ParqWizard() {
   async function onSubmit(data: FormData) {
     setLoading(true);
     try {
-      // Limpa o CPF (remove pontos e traços se o usuário digitou)
       const cleanCpf = data.cpf.replace(/\D/g, "");
 
       const payload = {
         ...data,
-        cpf: cleanCpf, // Envia CPF limpo
+        cpf: cleanCpf,
         limitations: data.limitations || "",
         parq: {
           chestPain: data.parq_chestPain,
@@ -145,14 +143,19 @@ export default function ParqWizard() {
     <Card className="overflow-hidden border-0 shadow-none sm:border sm:shadow-sm">
       <CardHeader className="flex flex-col gap-2 px-4 pt-6 sm:px-6">
         <div className="flex items-center justify-between">
-          <div className="text-lg font-extrabold text-zinc-900">Avaliação Inicial</div>
+          <div className="text-lg font-extrabold text-zinc-900">Consultoria Híbrida</div>
           <Badge className="bg-zinc-100 text-zinc-600 hover:bg-zinc-200">
             Passo {step}/3
           </Badge>
         </div>
-        <div className="text-sm text-zinc-500">
-          Preencha seus dados para que a IA monte seu treino personalizado.
+        
+        {/* 🔥 AQUI ESTÁ A MUDANÇA SURPREENDENTE 🔥 */}
+        <div className="text-sm text-zinc-500 leading-relaxed">
+          Não é apenas uma ficha de treino. Ao preencher os dados abaixo, você garante um planejamento exclusivo e ganha 
+          <strong className="text-green-600 font-bold"> 1 mês de acompanhamento semanal no WhatsApp comigo </strong> 
+          para ajustes e dúvidas. Tudo isso por apenas <strong className="text-zinc-900">R$ 60,00</strong>.
         </div>
+
       </CardHeader>
 
       <CardContent className="space-y-4 px-4 pb-6 sm:px-6">
@@ -193,7 +196,6 @@ export default function ParqWizard() {
                   <p className="text-xs text-red-500">{form.formState.errors.email.message}</p>
                 )}
               </div>
-              {/* ✅ NOVO: Campo de CPF */}
               <div className="space-y-1.5">
                 <Label>CPF (Somente números)</Label>
                 <Input
@@ -210,19 +212,18 @@ export default function ParqWizard() {
 
             <div className="flex justify-end pt-2">
               <Button
-                className="w-full sm:w-auto"
+                className="w-full sm:w-auto font-bold"
                 onClick={async () => {
                   const ok = await form.trigger(["fullName", "whatsapp", "email", "cpf"]);
                   if (ok) setStep(2);
                 }}
               >
-                Próximo
+                Quero meu treino
               </Button>
             </div>
           </>
         )}
 
-        {/* ... Os outros passos (2 e 3) continuam iguais ... */}
         {step === 2 && (
           <>
             <div className="grid gap-4 md:grid-cols-2">
@@ -386,9 +387,9 @@ export default function ParqWizard() {
               <Button
                 onClick={form.handleSubmit(onSubmit)}
                 disabled={loading}
-                className="w-2/3 bg-green-600 hover:bg-green-700"
+                className="w-2/3 bg-green-600 hover:bg-green-700 font-bold"
               >
-                {loading ? "Processando..." : "Finalizar e Pagar"}
+                {loading ? "Processando..." : "Ir para Pagamento"}
               </Button>
             </div>
           </>
