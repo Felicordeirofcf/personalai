@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import Image from "next/image";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,7 +16,6 @@ const schema = z.object({
   fullName: z.string().min(3, "Nome muito curto"),
   email: z.string().email("Email inválido"),
   whatsapp: z.string().min(8, "Telefone inválido"),
-  // ✅ CPF obrigatório para o Asaas
   cpf: z.string().min(11, "CPF inválido (apenas números)"),
 
   goal: z.string().min(2, "Informe o objetivo"),
@@ -35,6 +35,12 @@ const schema = z.object({
 });
 
 type FormData = z.infer<typeof schema>;
+
+// ✅ Ajuste fácil aqui:
+// - Garanta que o nome do arquivo em /public bate exatamente (logo.png vs Logo.png)
+const LOGO_PRIMARY = "/logo.png";
+const LOGO_FALLBACK_1 = "/logo.svg";
+const LOGO_FALLBACK_2 = "/favicon.ico";
 
 function Check({
   label,
@@ -62,7 +68,12 @@ export default function ParqWizard() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
-  const form = useForm({
+  // ✅ Fallback do logo sem quebrar a tela
+  const [logoSrc, setLogoSrc] = useState(LOGO_PRIMARY);
+  const [logoTriedFallback1, setLogoTriedFallback1] = useState(false);
+  const [logoTriedFallback2, setLogoTriedFallback2] = useState(false);
+
+  const form = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
       location: "casa",
@@ -77,6 +88,11 @@ export default function ParqWizard() {
       limitations: "",
       parq_notes: "",
       cpf: "",
+      fullName: "",
+      email: "",
+      whatsapp: "",
+      goal: "",
+      equipment: "",
     },
   });
 
@@ -118,19 +134,18 @@ export default function ParqWizard() {
       });
 
       if (!res.ok) {
-        const err = await res.json();
+        const err = await res.json().catch(() => ({} as any));
         alert("Erro: " + (err.error || "Falha ao criar pedido"));
         return;
       }
 
       const json = await res.json();
-      
+
       if (json.checkoutUrl) {
-         window.location.href = json.checkoutUrl;
+        window.location.href = json.checkoutUrl;
       } else {
-         window.location.href = `/checkout/${json.orderId}`;
+        window.location.href = `/checkout/${json.orderId}`;
       }
-      
     } catch (error) {
       console.error(error);
       alert("Ocorreu um erro ao enviar.");
@@ -140,25 +155,64 @@ export default function ParqWizard() {
   }
 
   return (
-    <Card className="overflow-hidden border-0 shadow-none sm:border sm:shadow-sm">
-      <CardHeader className="flex flex-col gap-2 px-4 pt-6 sm:px-6">
-        <div className="flex items-center justify-between">
-          <div className="text-lg font-extrabold text-zinc-900">Consultoria Híbrida</div>
-          <Badge className="bg-zinc-100 text-zinc-600 hover:bg-zinc-200">
-            Passo {step}/3
+    <Card className="overflow-hidden border-0 shadow-xl sm:border sm:border-t-4 sm:border-t-[#1B3B5A] sm:shadow-sm">
+      <CardHeader className="flex flex-col items-center gap-4 px-4 pt-8 sm:px-6 text-center">
+        <div className="flex flex-col items-center">
+          <div className="relative mb-2 h-20 w-20 rounded-full overflow-hidden shadow-sm border border-zinc-100 bg-white">
+            <Image
+              src={logoSrc}
+              alt="Logo Felipe Ferreira Personal"
+              fill
+              priority
+              sizes="80px"
+              className="object-cover p-1"
+              onError={() => {
+                // ✅ tenta /logo.svg e depois /favicon.ico
+                if (!logoTriedFallback1) {
+                  setLogoTriedFallback1(true);
+                  setLogoSrc(LOGO_FALLBACK_1);
+                  return;
+                }
+                if (!logoTriedFallback2) {
+                  setLogoTriedFallback2(true);
+                  setLogoSrc(LOGO_FALLBACK_2);
+                }
+              }}
+            />
+          </div>
+
+          <h1 className="text-2xl font-extrabold text-[#1B3B5A] leading-tight">
+            Felipe Ferreira
+          </h1>
+          <Badge
+            variant="secondary"
+            className="mt-1 bg-zinc-100 text-zinc-600 font-medium tracking-wider"
+          >
+            CREF 071550-RJ
           </Badge>
         </div>
-        
-        {/* 🔥 AQUI ESTÁ A MUDANÇA SURPREENDENTE 🔥 */}
-        <div className="text-sm text-zinc-500 leading-relaxed">
-          Não é apenas uma ficha de treino. Ao preencher os dados abaixo, você garante um planejamento exclusivo e ganha 
-          <strong className="text-green-600 font-bold"> 1 mês de acompanhamento semanal no WhatsApp comigo </strong> 
-          para ajustes e dúvidas. Tudo isso por apenas <strong className="text-zinc-900">R$ 60,00</strong>.
+
+        <div className="h-px w-full max-w-[200px] bg-zinc-100 my-2" />
+
+        <div className="flex flex-col gap-1 items-center">
+          <h2 className="text-lg font-bold text-zinc-900">Consultoria Híbrida</h2>
+          <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+            Avaliação Inicial • Passo {step} de 3
+          </p>
         </div>
 
+        <div className="mt-2 rounded-lg bg-[#F5F8FA] p-4 text-sm text-zinc-600 leading-relaxed border border-[#E1E8ED]">
+          Ao preencher os dados abaixo, você garante um planejamento exclusivo (nada de treino de
+          gaveta!) e ganha{" "}
+          <strong className="text-[#1B3B5A] font-bold">
+            {" "}
+            1 mês de acompanhamento semanal diretamente comigo no WhatsApp{" "}
+          </strong>
+          para ajustes. Tudo isso por apenas <strong className="text-zinc-900">R$ 60,00</strong>.
+        </div>
       </CardHeader>
 
-      <CardContent className="space-y-4 px-4 pb-6 sm:px-6">
+      <CardContent className="space-y-4 px-4 pb-8 sm:px-6 pt-2">
         {step === 1 && (
           <>
             <div className="grid gap-4 md:grid-cols-2">
@@ -170,9 +224,12 @@ export default function ParqWizard() {
                   className="bg-zinc-50/50"
                 />
                 {form.formState.errors.fullName && (
-                  <p className="text-xs text-red-500">{form.formState.errors.fullName.message}</p>
+                  <p className="text-xs text-red-500">
+                    {form.formState.errors.fullName.message}
+                  </p>
                 )}
               </div>
+
               <div className="space-y-1.5">
                 <Label>WhatsApp</Label>
                 <Input
@@ -181,9 +238,12 @@ export default function ParqWizard() {
                   className="bg-zinc-50/50"
                 />
                 {form.formState.errors.whatsapp && (
-                  <p className="text-xs text-red-500">{form.formState.errors.whatsapp.message}</p>
+                  <p className="text-xs text-red-500">
+                    {form.formState.errors.whatsapp.message}
+                  </p>
                 )}
               </div>
+
               <div className="space-y-1.5">
                 <Label>Email</Label>
                 <Input
@@ -196,6 +256,7 @@ export default function ParqWizard() {
                   <p className="text-xs text-red-500">{form.formState.errors.email.message}</p>
                 )}
               </div>
+
               <div className="space-y-1.5">
                 <Label>CPF (Somente números)</Label>
                 <Input
@@ -210,15 +271,15 @@ export default function ParqWizard() {
               </div>
             </div>
 
-            <div className="flex justify-end pt-2">
+            <div className="flex justify-end pt-4">
               <Button
-                className="w-full sm:w-auto font-bold"
+                className="w-full sm:w-auto font-bold bg-[#1B3B5A] hover:bg-[#142C44]"
                 onClick={async () => {
                   const ok = await form.trigger(["fullName", "whatsapp", "email", "cpf"]);
                   if (ok) setStep(2);
                 }}
               >
-                Quero meu treino
+                Continuar Avaliação
               </Button>
             </div>
           </>
@@ -240,11 +301,7 @@ export default function ParqWizard() {
 
               <div className="space-y-1.5">
                 <Label>Tempo disponível (min/dia)</Label>
-                <Input
-                  type="number"
-                  {...form.register("timePerDayMin")}
-                  placeholder="45"
-                />
+                <Input type="number" {...form.register("timePerDayMin")} placeholder="45" />
               </div>
 
               <div className="space-y-1.5">
@@ -290,7 +347,9 @@ export default function ParqWizard() {
                   placeholder="Ex: Apenas do corpo, halteres, barra..."
                 />
                 {form.formState.errors.equipment && (
-                  <p className="text-xs text-red-500">{form.formState.errors.equipment.message}</p>
+                  <p className="text-xs text-red-500">
+                    {form.formState.errors.equipment.message}
+                  </p>
                 )}
               </div>
 
@@ -303,12 +362,12 @@ export default function ParqWizard() {
               </div>
             </div>
 
-            <div className="flex justify-between gap-3 pt-2">
+            <div className="flex justify-between gap-3 pt-4">
               <Button variant="outline" onClick={() => setStep(1)} className="w-1/3">
                 Voltar
               </Button>
               <Button
-                className="w-2/3"
+                className="w-2/3 bg-[#1B3B5A] hover:bg-[#142C44] font-bold"
                 onClick={async () => {
                   const ok = await form.trigger([
                     "goal",
@@ -373,23 +432,26 @@ export default function ParqWizard() {
               {hasParqAlert && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 flex items-start gap-2">
                   <span>⚠️</span>
-                  <span>
-                    Você marcou itens de atenção no PAR-Q. O treino será adaptado com cautela extra.
-                  </span>
+                  <span>Você marcou itens de atenção no PAR-Q. O treino será adaptado com cautela extra.</span>
                 </div>
               )}
             </div>
 
             <div className="flex justify-between gap-3 pt-4">
-              <Button variant="outline" onClick={() => setStep(2)} className="w-1/3" disabled={loading}>
+              <Button
+                variant="outline"
+                onClick={() => setStep(2)}
+                className="w-1/3"
+                disabled={loading}
+              >
                 Voltar
               </Button>
               <Button
                 onClick={form.handleSubmit(onSubmit)}
                 disabled={loading}
-                className="w-2/3 bg-green-600 hover:bg-green-700 font-bold"
+                className="w-2/3 bg-green-600 hover:bg-green-700 font-bold shadow-md"
               >
-                {loading ? "Processando..." : "Ir para Pagamento"}
+                {loading ? "Processando..." : "Ir para Pagamento (R$ 60)"}
               </Button>
             </div>
           </>
