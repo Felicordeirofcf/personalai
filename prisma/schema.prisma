@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  draft
+  pending_payment
+  paid_pending_review
+  ai_draft_ready
+  coach_adjusted
+  sent
+}
+
+model Order {
+  id               String      @id @default(cuid())
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  status           OrderStatus @default(draft)
+
+  fullName         String
+  email            String
+  whatsapp         String
+
+  goal             String
+  location         String
+  frequency        String
+  experience       String
+  timePerDayMin    Int
+  equipment        String
+  limitations      String
+
+  parqJson         Json
+
+  priceCents       Int
+  paymentNote      String?
+  receiptPath      String?
+
+  aiDraftJson        Json?
+  finalWorkoutJson   Json?
+
+  sentAt           DateTime?
+}
