@@ -33,15 +33,27 @@ model Order {
   timePerDayMin    Int
   equipment        String
   limitations      String
-
   parqJson         Json
 
   priceCents       Int
   paymentNote      String?
   receiptPath      String?
 
-  aiDraftJson        Json?
-  finalWorkoutJson   Json?
+  // NOVO (pagamento)
+  paymentProvider  String?     // "asaas"
+  paymentRef       String?     // id da cobrança/link no Asaas
+  paymentUrl       String?     // url do checkout/link
+  paidAt           DateTime?
 
+  aiDraftJson      Json?
+  finalWorkoutJson Json?
   sentAt           DateTime?
+
+  // ✅ Asaas
+  asaasCheckoutId    String?
+  asaasCheckoutUrl   String?
+  asaasExternalRef   String?  // normalmente igual ao seu order.id
+  asaasPaymentId     String?  // vem via webhook quando gerar cobrança/pagamento
 }
+
+

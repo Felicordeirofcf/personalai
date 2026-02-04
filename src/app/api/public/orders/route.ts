@@ -1,29 +1,83 @@
+// src/app/api/public/orders/route.ts
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { createCheckoutForOrder } from "@/lib/asaas";
+
+const OrderSchema = z.object({
+  fullName: z.string().min(3),
+  email: z.string().email(),
+  whatsapp: z.string().min(8),
+
+  goal: z.string().min(2),
+  location: z.string().min(2),
+  frequency: z.string().min(1),
+  experience: z.string().min(1),
+  timePerDayMin: z.number().int().min(5).max(300),
+  equipment: z.string().min(1),
+  limitations: z.string().optional().default(""),
+
+  parqJson: z.any(),
+});
 
 export async function POST(req: Request) {
-  const body = await req.json();
+  try {
+    const body = await req.json();
+    const data = OrderSchema.parse(body);
 
-  // preço fixo (MVP) — depois você pode criar planos
-  const priceCents = 9900; // R$ 99,00
+    const priceCents = Number(process.env.PRODUCT_PRICE_CENTS ?? "4000");
+    const appBaseUrl = process.env.APP_BASE_URL ?? "http://localhost:3000";
 
-  const order = await prisma.order.create({
-    data: {
-      status: "pending_payment",
-      fullName: body.fullName,
-      email: body.email,
-      whatsapp: body.whatsapp,
-      goal: body.goal,
-      location: body.location,
-      frequency: body.frequency,
-      experience: body.experience,
-      timePerDayMin: body.timePerDayMin,
-      equipment: body.equipment,
-      limitations: body.limitations ?? "",
-      parqJson: body.parq ?? {},
-      priceCents,
-    },
-  });
+    // 1) cria order no seu banco
+    const order = await prisma.order.create({
+      data: {
+        status: "pending_payment",
+        priceCents,
 
-  return NextResponse.json({ orderId: order.id });
+        fullName: data.fullName,
+        email: data.email,
+        whatsapp: data.whatsapp,
+
+        goal: data.goal,
+        location: data.location,
+        frequency: data.frequency,
+        experience: data.experience,
+        timePerDayMin: data.timePerDayMin,
+        equipment: data.equipment,
+        limitations: data.limitations ?? "",
+
+        parqJson: data.parqJson,
+      },
+    });
+
+    // 2) cria checkout no Asaas (PIX + cartão)
+    const checkout = await createCheckoutForOrder({
+      orderId: order.id,
+      fullName: order.fullName,
+      email: order.email,
+      whatsapp: order.whatsapp,
+      priceCents: order.priceCents,
+      appBaseUrl,
+    });
+
+    // 3) salva referência do checkout no pedido
+    await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        asaasCheckoutId: checkout.id,
+        asaasCheckoutUrl: checkout.checkoutUrl,
+        asaasExternalRef: order.id,
+      },
+    });
+
+    return NextResponse.json(
+      { ok: true, orderId: order.id, checkoutUrl: checkout.checkoutUrl },
+      { status: 200 },
+    );
+  } catch (err: any) {
+    return NextResponse.json(
+      { ok: false, error: err?.message ?? "Erro ao criar pedido" },
+      { status: 400 },
+    );
+  }
 }
