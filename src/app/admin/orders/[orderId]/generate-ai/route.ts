@@ -6,13 +6,12 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// ✅ CORREÇÃO 1: 'params' agora é uma Promise (regra nova do Next.js 15)
 export async function POST(
   req: Request,
   props: { params: Promise<{ orderId: string }> }
 ) {
   try {
-    const params = await props.params; // Aguardamos o params ser resolvido
+    const params = await props.params;
     
     const order = await prisma.order.findUnique({
       where: { id: params.orderId },
@@ -24,7 +23,6 @@ export async function POST(
 
     const parq = (order.parqJson as any) || {};
     
-    // Monta os alertas de saúde
     let parqAlerts = "";
     if (parq.chestPain) parqAlerts += "- ALERTA: Sente dores no peito (CUIDADO REDOBRADO)\n";
     if (parq.dizziness) parqAlerts += "- ALERTA: Tem tonturas/desmaios\n";
@@ -56,21 +54,20 @@ export async function POST(
     `;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-4o-mini", // Certifique-se que seu plano OpenAI permite este modelo, ou use "gpt-3.5-turbo"
       messages: [
         { role: "system", content: promptSistema },
         { role: "user", content: "Monte o treino agora." },
       ],
     });
 
-    // ✅ CORREÇÃO 2: Garante que seja uma string vazia se vier nulo, para não quebrar o banco
     const treinoGerado = completion.choices[0].message.content || "";
 
     await prisma.order.update({
       where: { id: params.orderId },
       data: {
         aiDraftJson: treinoGerado, 
-        // Se ainda não tiver treino final, preenchemos. Se já tiver, não mexemos.
+        // Se ainda não tem treino final, preenchemos com o da IA
         finalWorkoutJson: order.finalWorkoutJson ? undefined : treinoGerado,
       },
     });

@@ -14,6 +14,7 @@ export default function OrderDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   
   const [finalText, setFinalText] = useState("");
 
@@ -52,22 +53,51 @@ export default function OrderDetailsPage() {
     }
   }
 
-  async function handleSaveAndSend() {
+  // ✅ CORREÇÃO 1: Status "paid" em vez de "completed"
+  async function handleSaveAndDownload() {
     if (!order?.id) return;
-    setSaving(true);
+    setDownloading(true);
     try {
-      // 1. Salva o treino
       const res = await fetch(`/api/admin/orders/${order.id}/save-final`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           finalWorkout: finalText,
-          forceStatus: "completed"
+          forceStatus: "paid" // Alterado aqui
+        }),
+      });
+
+      if (res.ok) {
+        window.location.href = `/api/orders/${order.id}/pdf`;
+        // Atualiza a tela para mostrar o novo status verde
+        setOrder({ ...order, status: "paid" });
+      } else {
+        const err = await res.json();
+        console.error(err);
+        alert("Erro ao salvar: " + (err.error || "Tente novamente"));
+      }
+    } catch (e) {
+      alert("Erro de conexão ao salvar.");
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  // ✅ CORREÇÃO 2: Status "paid" aqui também
+  async function handleSaveAndSend() {
+    if (!order?.id) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/orders/${order.id}/save-final`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          finalWorkout: finalText,
+          forceStatus: "paid" // Alterado aqui
         }),
       });
       
       if (res.ok) {
-        // 2. Mensagem Tradicional (Sem link, você anexa o PDF depois)
         const primeiroNome = order.fullName.split(" ")[0];
         const mensagemZap = `Fala ${primeiroNome}! Tudo bem? 💪
 
@@ -80,7 +110,6 @@ Qualquer dúvida, me chama!`;
         const textEncoded = encodeURIComponent(mensagemZap);
         const linkZap = `https://wa.me/55${order.whatsapp.replace(/\D/g, "")}?text=${textEncoded}`;
         
-        // 3. Abre o WhatsApp
         window.open(linkZap, "_blank");
         router.refresh();
       } else {
@@ -178,22 +207,18 @@ Qualquer dúvida, me chama!`;
                 
                 <div className="bg-zinc-50 p-4 rounded-lg border border-zinc-100 space-y-3">
                   
-                  {/* BOTÃO 1: DOWNLOAD DO PDF (LINK DIRETO) */}
                   <div className="flex items-center gap-3">
                     <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-xs font-bold text-zinc-600">A</div>
-                    <a 
-                      href={`/api/orders/${order.id}/pdf`}
-                      target="_blank"
-                      download
-                      className="w-full"
+                    <Button 
+                      onClick={handleSaveAndDownload}
+                      disabled={downloading}
+                      variant="outline" 
+                      className="w-full border-zinc-300"
                     >
-                      <Button variant="outline" className="w-full border-zinc-300">
-                        📄 Baixar PDF no Celular
-                      </Button>
-                    </a>
+                      {downloading ? "Salvando e Baixando..." : "📄 Salvar e Baixar PDF"}
+                    </Button>
                   </div>
 
-                  {/* BOTÃO 2: SALVAR E ZAP */}
                   <div className="flex items-center gap-3">
                     <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-xs font-bold text-zinc-600">B</div>
                     <Button 
@@ -219,12 +244,19 @@ Qualquer dúvida, me chama!`;
 }
 
 function StatusBadge({ status }: { status: string }) {
+  // ✅ CORREÇÃO 3: Mapeamento atualizado para incluir 'paid'
   const colors: Record<string, string> = {
     pending_payment: "bg-yellow-100 text-yellow-800",
-    completed: "bg-green-100 text-green-800",
+    paid: "bg-green-100 text-green-800", // Status correto do banco
+    completed: "bg-green-100 text-green-800", // Mantendo por segurança
     refused: "bg-red-100 text-red-800",
   };
-  return <Badge className={`${colors[status] || "bg-gray-100"} hover:bg-opacity-80`}>{status}</Badge>;
+  
+  return (
+    <Badge className={`${colors[status] || "bg-gray-100"} hover:bg-opacity-80`}>
+      {status === 'paid' ? 'Pago / Completo' : status}
+    </Badge>
+  );
 }
 
 function CheckItem({ label, value }: { label: string, value: boolean }) {

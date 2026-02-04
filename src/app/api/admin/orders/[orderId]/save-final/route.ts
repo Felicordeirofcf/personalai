@@ -8,15 +8,15 @@ export async function POST(
   try {
     const params = await props.params;
     const body = await req.json();
-    const { finalWorkout, forceStatus } = body;
+    const { finalWorkout } = body; // Removemos o 'forceStatus'
 
-    // Atualiza o pedido com o treino final editado por você
+    // Atualiza APENAS o texto do treino e a data de envio
     const updatedOrder = await prisma.order.update({
       where: { id: params.orderId },
       data: {
-        finalWorkoutJson: finalWorkout, // Salva o texto final
-        status: forceStatus || undefined, // Se pediu para mudar status, muda
-        sentAt: new Date(), // Marca a data de envio
+        finalWorkoutJson: finalWorkout, 
+        // status: forceStatus, <--- COMENTADO PARA NÃO DAR ERRO
+        sentAt: new Date(),
       },
     });
 
