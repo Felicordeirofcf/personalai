@@ -3,26 +3,27 @@ import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import OpenAI from "openai";
 
-function buildPrompt(order: any) {
+function prompt(order: any) {
   return `
-Gere um treino seguro e objetivo para um aluno.
 Responda APENAS com JSON válido (sem markdown).
+Crie treino seguro e objetivo.
 
 Formato:
 {
   "overview": { "goal": string, "frequencyPerWeek": string, "timePerDayMin": number, "experience": string, "location": string, "equipment": string },
-  "safety": { "parqFlags": string[], "notes": string },
   "plan": [
-    { "day": string, "focus": string, "durationMin": number, "warmup": string[],
+    { "day": string, "focus": string, "durationMin": number,
+      "warmup": string[],
       "workout": [{ "name": string, "sets": number, "reps": string, "restSec": number, "notes": string }],
-      "cooldown": string[], "intensity": "leve" | "moderada" | "alta"
+      "cooldown": string[],
+      "intensity": "leve" | "moderada" | "alta"
     }
   ],
   "progression": string[],
   "extraNotes": string[]
 }
 
-Dados do aluno:
+ALUNO:
 Nome: ${order.fullName}
 Objetivo: ${order.goal}
 Local: ${order.location}
@@ -32,15 +33,12 @@ Tempo/dia: ${order.timePerDayMin}
 Equipamentos: ${order.equipment}
 Limitações: ${order.limitations}
 
-PAR-Q:
+PARQ:
 ${JSON.stringify(order.parqJson ?? {}, null, 2)}
 `.trim();
 }
 
-export async function POST(
-  _req: Request,
-  ctx: { params: Promise<{ orderId: string }> }
-) {
+export async function POST(_req: Request, ctx: { params: Promise<{ orderId: string }> }) {
   const ok = await requireAdmin();
   if (!ok) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
@@ -59,18 +57,17 @@ export async function POST(
     model,
     temperature: 0.4,
     messages: [
-      { role: "system", content: "Você é um personal trainer e prioriza segurança." },
-      { role: "user", content: buildPrompt(order) },
+      { role: "system", content: "Você é um personal trainer focado em segurança e clareza." },
+      { role: "user", content: prompt(order) },
     ],
   });
 
   const text = resp.choices?.[0]?.message?.content?.trim() || "";
   let json: any;
-
   try {
     json = JSON.parse(text);
   } catch {
-    return NextResponse.json({ error: "IA não retornou JSON válido", raw: text.slice(0, 1500) }, { status: 422 });
+    return NextResponse.json({ error: "IA não retornou JSON válido", raw: text.slice(0, 1200) }, { status: 422 });
   }
 
   await prisma.order.update({

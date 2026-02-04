@@ -1,27 +1,28 @@
-import jwt from "jsonwebtoken";
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { env } from "@/lib/env";
-
-const COOKIE_NAME = "admin_token";
+import { signAdminToken, ADMIN_COOKIE_NAME } from "@/lib/auth";
 
 export async function POST(req: Request) {
-  const body = await req.json().catch(() => ({}));
-  const email = String(body?.email ?? "");
-  const password = String(body?.password ?? "");
+  const form = await req.formData();
+  const email = String(form.get("email") || "");
+  const password = String(form.get("password") || "");
 
-  if (email !== env.ADMIN_EMAIL || password !== env.ADMIN_PASSWORD) {
-    return NextResponse.json({ error: "Credenciais inválidas" }, { status: 401 });
+  const envEmail = process.env.ADMIN_EMAIL || "admin@local";
+  const envPass = process.env.ADMIN_PASSWORD || "";
+
+  if (!envPass) {
+    return NextResponse.json({ ok: false, error: "ADMIN_PASSWORD não definido" }, { status: 500 });
   }
 
-  const token = jwt.sign(
-    { role: "admin", email },
-    env.JWT_SECRET,
-    { expiresIn: "7d" }
-  );
+  if (email !== envEmail || password !== envPass) {
+    return NextResponse.redirect(new URL("/admin/login", req.url), { status: 302 });
+  }
 
-  const cookieStore = await cookies();
-  cookieStore.set(COOKIE_NAME, token, {
+  const token = signAdminToken();
+  const res = NextResponse.redirect(new URL("/admin", req.url), { status: 302 });
+
+  res.cookies.set({
+    name: ADMIN_COOKIE_NAME,
+    value: token,
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
@@ -29,5 +30,5 @@ export async function POST(req: Request) {
     maxAge: 60 * 60 * 24 * 7,
   });
 
-  return NextResponse.json({ ok: true });
+  return res;
 }

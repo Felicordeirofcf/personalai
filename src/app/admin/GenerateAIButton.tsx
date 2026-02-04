@@ -2,27 +2,16 @@
 
 import { useState } from "react";
 
-export default function GenerateAIButton({
-  orderId,
-  disabled,
-}: {
-  orderId: string;
-  disabled?: boolean;
-}) {
+export default function GenerateAIButton({ orderId }: { orderId: string }) {
   const [loading, setLoading] = useState(false);
 
-  async function generate() {
+  async function run() {
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/orders/${orderId}/generate-ai`, {
-        method: "POST",
-      });
+      const res = await fetch(`/api/admin/orders/${orderId}/generate-ai`, { method: "POST" });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        alert(data?.error || "Erro ao gerar treino IA.");
-        return;
-      }
-      window.location.reload();
+      if (!res.ok) alert(data?.error || "Erro ao gerar IA.");
+      else window.location.reload();
     } finally {
       setLoading(false);
     }
@@ -30,12 +19,11 @@ export default function GenerateAIButton({
 
   return (
     <button
-      onClick={generate}
-      disabled={disabled || loading}
+      onClick={run}
+      disabled={loading}
       className="rounded-xl bg-black px-3 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60"
-      title={disabled ? "Confirme o pagamento primeiro" : "Gerar treino IA"}
     >
-      {loading ? "Gerando..." : "Gerar treino IA"}
+      {loading ? "Gerando..." : "Gerar treino com IA"}
     </button>
   );
 }

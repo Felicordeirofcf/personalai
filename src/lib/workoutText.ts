@@ -20,16 +20,16 @@ export function workoutToWhatsAppText(order: any) {
     );
   }
 
-  const overview = w.overview ?? {};
+  const ov = w.overview ?? {};
   const plan = Array.isArray(w.plan) ? w.plan : [];
 
   let text =
     `Olá, ${name}! ✅\n\n` +
     `Aqui está seu treino personalizado.\n\n` +
-    `🎯 Objetivo: ${line(overview.goal || goal)}\n` +
-    `📅 Frequência: ${line(overview.frequencyPerWeek || freq)}\n` +
-    `⏱️ Tempo por dia: ${line(overview.timePerDayMin || timeMin)} min\n` +
-    (line(overview.equipment || order.equipment) ? `🏋️ Equipamentos: ${line(overview.equipment || order.equipment)}\n` : "") +
+    `🎯 Objetivo: ${line(ov.goal || goal)}\n` +
+    `📅 Frequência: ${line(ov.frequencyPerWeek || freq)}\n` +
+    `⏱️ Tempo por dia: ${line(ov.timePerDayMin || timeMin)} min\n` +
+    (line(ov.equipment || order.equipment) ? `🏋️ Equipamentos: ${line(ov.equipment || order.equipment)}\n` : "") +
     `\n`;
 
   for (const day of plan) {
@@ -43,12 +43,9 @@ export function workoutToWhatsAppText(order: any) {
     if (Array.isArray(day.workout) && day.workout.length) {
       text += `• Treino:\n`;
       for (const ex of day.workout) {
-        const sets = ex.sets ?? "";
-        const reps = line(ex.reps);
-        const rest = ex.restSec ?? "";
-        const notes = line(ex.notes);
-
-        text += `  - ${line(ex.name)}: ${sets}x ${reps} (descanso ${rest}s)${notes ? ` — ${notes}` : ""}\n`;
+        text += `  - ${line(ex.name)}: ${ex.sets ?? ""}x ${line(ex.reps)} (descanso ${ex.restSec ?? ""}s)`;
+        const n = line(ex.notes);
+        text += n ? ` — ${n}\n` : "\n";
       }
     }
 
@@ -57,30 +54,11 @@ export function workoutToWhatsAppText(order: any) {
       for (const i of day.cooldown) text += `  - ${line(i)}\n`;
     }
 
-    if (line(day.intensity)) {
-      text += `• Intensidade: ${line(day.intensity)}\n`;
-    }
-
+    if (line(day.intensity)) text += `• Intensidade: ${line(day.intensity)}\n`;
     text += `\n`;
   }
 
-  if (Array.isArray(w.progression) && w.progression.length) {
-    text += `📈 Progressão:\n`;
-    for (const p of w.progression) text += `- ${line(p)}\n`;
-    text += `\n`;
-  }
-
-  if (Array.isArray(w.extraNotes) && w.extraNotes.length) {
-    text += `📝 Observações:\n`;
-    for (const n of w.extraNotes) text += `- ${line(n)}\n`;
-    text += `\n`;
-  }
-
-  text += `Qualquer dor fora do normal: pare e me avise. 💪`;
-
-  if (text.length > 12000) {
-    text = text.slice(0, 11800) + "\n\n(…mensagem resumida. Se quiser, envio em partes.)";
-  }
+  text += `Se quiser, me diga como se sentiu no 1º dia que eu ajusto. 💪`;
 
   return text;
 }

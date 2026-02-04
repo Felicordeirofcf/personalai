@@ -1,67 +1,29 @@
-"use client";
-
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-
 export default function AdminLoginPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    const res = await fetch("/api/admin/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-
-    setLoading(false);
-
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setError(data?.error ?? "Falha no login");
-      return;
-    }
-
-    router.push("/admin");
-  }
-
   return (
-    <div className="mx-auto max-w-md p-8">
-      <h1 className="text-2xl font-bold mb-4">Login Admin</h1>
+    <div className="min-h-[70vh] flex items-center justify-center p-6">
+      <div className="w-full max-w-md rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm space-y-4">
+        <div>
+          <h1 className="text-2xl font-extrabold tracking-tight">Entrar no Admin</h1>
+          <p className="text-sm text-zinc-600 mt-1">Use o email e senha do .env / Render env.</p>
+        </div>
 
-      <form onSubmit={onSubmit} className="space-y-3">
-        <input
-          className="w-full rounded-lg border p-3"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-
-        <input
-          className="w-full rounded-lg border p-3"
-          placeholder="Senha"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-
-        {error && <div className="text-sm text-red-600">{error}</div>}
-
-        <button
-          className="w-full rounded-lg bg-black text-white p-3 disabled:opacity-60"
-          disabled={loading}
-          type="submit"
-        >
-          {loading ? "Entrando..." : "Entrar"}
-        </button>
-      </form>
+        <form action="/api/admin/login" method="POST" className="space-y-3">
+          <input
+            name="email"
+            placeholder="Email"
+            className="w-full rounded-xl border border-zinc-200 p-3 text-sm outline-none focus:ring-2 focus:ring-zinc-200"
+          />
+          <input
+            name="password"
+            placeholder="Senha"
+            type="password"
+            className="w-full rounded-xl border border-zinc-200 p-3 text-sm outline-none focus:ring-2 focus:ring-zinc-200"
+          />
+          <button className="w-full rounded-xl bg-black px-3 py-3 text-sm font-semibold text-white hover:opacity-90">
+            Entrar
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
