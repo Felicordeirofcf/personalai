@@ -418,7 +418,7 @@ export default function ParqWizard() {
                 disabled={loading}
                 className="w-2/3 bg-green-600 hover:bg-green-700 font-bold shadow-md"
               >
-                {loading ? "Processando..." : "Ir para Pagamento (R$ 60)"}
+                {loading ? "Processando..." : "Ir para Pagamento (R$ 50,00)"}
               </Button>
             </div>
           </>

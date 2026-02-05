@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { approvePayment } from "@/lib/actions"; // <--- Ação do servidor
+import { CheckCircle, ArrowLeft, Loader2 } from "lucide-react"; // <--- Ícones
 
 export default function OrderDetailsPage() {
   const params = useParams();
@@ -33,6 +35,24 @@ export default function OrderDetailsPage() {
       .catch((err) => console.error(err));
   }, [params]);
 
+  // ✅ Função para Aprovar Pagamento Manualmente
+  async function handleApprove() {
+    if (!order?.id) return;
+    if (!confirm("Tem certeza que deseja marcar este pedido como PAGO manualmente?")) return;
+
+    try {
+      const res = await approvePayment(order.id);
+      if (res.success) {
+        setOrder({ ...order, status: "paid" }); // Atualiza a tela na hora
+        alert("Pagamento aprovado com sucesso! ✅");
+      } else {
+        alert("Erro ao aprovar: " + res.error);
+      }
+    } catch (error) {
+      alert("Erro de conexão.");
+    }
+  }
+
   // ✅ Atualiza a tela assim que a IA responde
   async function handleGenerateAI() {
     if (!order?.id) return;
@@ -57,13 +77,13 @@ export default function OrderDetailsPage() {
     }
   }
 
-  // ✅ NOVA LÓGICA: Salva no banco (Render) e baixa do Python Local
+  // ✅ Salva no banco (Next.js) e baixa do Python (Render)
   async function handleSaveAndDownload() {
     if (!order?.id) return;
     setDownloading(true);
 
     try {
-      // 1. Salva no seu banco de dados (Next.js/Render)
+      // 1. Salva no seu banco de dados
       const res = await fetch(`/api/admin/orders/${order.id}/save-final`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -74,32 +94,29 @@ export default function OrderDetailsPage() {
       });
 
       if (res.ok) {
-        // Atualiza status na tela
         setOrder({ ...order, status: "paid" });
 
-        // 2. Chama o Python Local (app.py) para gerar o PDF
+        // 2. Chama o Python no Render para gerar o PDF
         try {
-            console.log("Chamando gerador de PDF local...");
+            console.log("Chamando gerador de PDF...");
             
-            // O fetch acontece no navegador do Admin, então ele consegue ver o localhost
             const pdfRes = await fetch('https://treino-ai-pdf.onrender.com/api/gerar-pdf', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     nome: order.fullName,
-                    treino: finalText // Manda o texto que está no textarea
+                    treino: finalText 
                 })
             });
 
-            if (!pdfRes.ok) throw new Error("Erro no servidor Python Local");
+            if (!pdfRes.ok) throw new Error("Erro no servidor de PDF");
 
-            // 3. Recebe o arquivo e força o download
+            // 3. Baixa o arquivo
             const blob = await pdfRes.blob();
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
             
-            // Limpa o nome para o arquivo
             const safeName = order.fullName.replace(/[^a-zA-Z0-9]/g, '_');
             link.setAttribute('download', `Treino_${safeName}.pdf`);
             
@@ -110,13 +127,12 @@ export default function OrderDetailsPage() {
 
         } catch (pyErr) {
             console.error("Erro no PDF:", pyErr);
-            alert("Treino SALVO no sistema, mas houve erro ao gerar o PDF.\n\nVerifique se o arquivo 'app.py' está rodando na sua máquina.");
+            alert("Treino salvo, mas erro ao gerar PDF.\nO servidor Python pode estar iniciando (cold start). Tente de novo em 1 minuto.");
         }
 
       } else {
         const err = await res.json();
-        console.error(err);
-        alert("Salvo, mas houve um aviso: " + (err.error || "Verifique o status"));
+        alert("Erro ao salvar: " + (err.error || "Tente novamente"));
       }
     } catch (e) {
       alert("Erro de conexão ao salvar.");
@@ -140,6 +156,7 @@ export default function OrderDetailsPage() {
       });
       
       if (res.ok) {
+        setOrder({ ...order, status: "paid" }); // Garante status pago visualmente
         const primeiroNome = order.fullName.split(" ")[0];
         const mensagemZap = `Fala ${primeiroNome}! Tudo bem? 💪
 
@@ -164,14 +181,15 @@ Qualquer dúvida, me chama!`;
     }
   }
 
-  if (loading) return <div className="p-8 font-medium text-zinc-500">Carregando pedido...</div>;
+  if (loading) return <div className="p-8 font-medium text-zinc-500 flex items-center gap-2"><Loader2 className="animate-spin"/> Carregando pedido...</div>;
   if (!order) return <div className="p-8 font-medium text-zinc-500">Pedido não encontrado.</div>;
 
   const parq = order.parqJson || {};
 
   return (
     <div className="min-h-screen bg-zinc-50 p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      {/* HEADER DA PÁGINA */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-zinc-900">Pedido: {order.fullName}</h1>
           <div className="flex items-center gap-2 mt-1">
@@ -179,12 +197,27 @@ Qualquer dúvida, me chama!`;
             <StatusBadge status={order.status} />
           </div>
         </div>
-        <Button 
-          className="bg-white text-zinc-900 border border-zinc-200 hover:bg-zinc-100" 
-          onClick={() => router.push("/admin")}
-        >
-          Voltar
-        </Button>
+        
+        <div className="flex gap-2">
+            {/* BOTÃO NOVO: Só aparece se pendente */}
+            {order.status === 'pending_payment' && (
+                <Button 
+                    onClick={handleApprove}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-sm"
+                >
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    Aprovar Pagamento
+                </Button>
+            )}
+
+            <Button 
+            variant="outline"
+            className="bg-white text-zinc-900 border-zinc-200 hover:bg-zinc-100" 
+            onClick={() => router.push("/admin")}
+            >
+            <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
+            </Button>
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -257,7 +290,7 @@ Qualquer dúvida, me chama!`;
                       variant="outline" 
                       className="w-full border-zinc-300"
                     >
-                      {downloading ? "Salvando e Baixando..." : "📄 Salvar e Baixar PDF (Python)"}
+                      {downloading ? "Salvando e Baixando..." : "📄 Salvar e Baixar PDF"}
                     </Button>
                   </div>
 
@@ -289,13 +322,20 @@ function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
     pending_payment: "bg-yellow-100 text-yellow-800",
     paid: "bg-green-100 text-green-800", 
-    completed: "bg-green-100 text-green-800", 
+    completed: "bg-blue-100 text-blue-800", 
     refused: "bg-red-100 text-red-800",
   };
   
+  const labels: Record<string, string> = {
+      pending_payment: "Pendente",
+      paid: "Pago",
+      completed: "Concluído",
+      refused: "Cancelado"
+  };
+
   return (
     <Badge className={`${colors[status] || "bg-gray-100"} hover:bg-opacity-80`}>
-      {status === 'paid' ? 'Pago / Completo' : status}
+      {labels[status] || status}
     </Badge>
   );
 }
