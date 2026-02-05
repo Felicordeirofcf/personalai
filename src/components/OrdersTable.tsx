@@ -3,10 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { deleteOrder } from "@/app/actions/order-actions"; // Importa a ação do Passo 1
-import { Trash2, Search, Filter } from "lucide-react"; // Ícones (se tiver lucide-react)
+import { deleteOrder } from "@/lib/actions"; // Importe a ação do Passo 1
+import { Search, Filter, Trash2, Loader2 } from "lucide-react"; // Instale lucide-react ou use texto
 
-// Tipagem básica do pedido (ajuste conforme seu Prisma schema)
 type Order = {
   id: string;
   createdAt: Date;
@@ -20,57 +19,58 @@ export function OrdersTable({ initialOrders }: { initialOrders: Order[] }) {
   const [filterStatus, setFilterStatus] = useState("all");
   const [loadingDelete, setLoadingDelete] = useState<string | null>(null);
 
-  // --- LÓGICA DE FILTRO ---
+  // --- LÓGICA DE FILTRAGEM ---
   const filteredOrders = initialOrders.filter((order) => {
-    // 1. Filtro por Nome (insensível a maiúsculas/minúsculas)
-    const matchesName = order.fullName.toLowerCase().includes(filterText.toLowerCase()) || 
-                        order.email.toLowerCase().includes(filterText.toLowerCase());
-    
-    // 2. Filtro por Status
-    const matchesStatus = filterStatus === "all" || order.status === filterStatus;
+    const textMatch =
+      order.fullName.toLowerCase().includes(filterText.toLowerCase()) ||
+      order.email.toLowerCase().includes(filterText.toLowerCase());
 
-    return matchesName && matchesStatus;
+    const statusMatch = filterStatus === "all" || order.status === filterStatus;
+
+    return textMatch && statusMatch;
   });
 
   // --- LÓGICA DE DELETAR ---
   async function handleDelete(id: string) {
-    if (!confirm("Tem certeza que deseja EXCLUIR este pedido? Essa ação não tem volta.")) return;
-    
+    if (!confirm("Tem certeza que deseja EXCLUIR este pedido?")) return;
+
     setLoadingDelete(id);
     const res = await deleteOrder(id);
     setLoadingDelete(null);
 
-    if (!res.success) alert("Erro ao deletar pedido.");
+    if (!res.success) alert("Erro ao deletar.");
   }
 
   return (
     <div className="space-y-4">
       {/* BARRA DE FILTROS */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center">
+        {/* Busca por Nome */}
         <div className="relative w-full md:w-1/3">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-400" />
           <input
             type="text"
-            placeholder="Buscar por nome ou email..."
+            placeholder="Buscar aluno..."
             className="h-10 w-full rounded-md border border-zinc-200 pl-9 pr-4 text-sm outline-none focus:border-zinc-400"
             value={filterText}
             onChange={(e) => setFilterText(e.target.value)}
           />
         </div>
 
-        <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-zinc-400" />
-            <select
-                className="h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm outline-none focus:border-zinc-400"
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-            >
-                <option value="all">Todos os Status</option>
-                <option value="pending_payment">Aguardando Pagamento</option>
-                <option value="paid_pending_review">Pago / Revisar</option>
-                <option value="completed">Enviado</option>
-                <option value="refused">Cancelado</option>
-            </select>
+        {/* Filtro de Status */}
+        <div className="relative">
+          <Filter className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-400" />
+          <select
+            className="h-10 rounded-md border border-zinc-200 bg-white pl-9 pr-8 text-sm outline-none focus:border-zinc-400 cursor-pointer"
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+          >
+            <option value="all">Todos os Status</option>
+            <option value="pending_payment">Aguardando Pagamento</option>
+            <option value="paid_pending_review">Pago / Revisar</option>
+            <option value="completed">Enviado</option>
+            <option value="refused">Cancelado</option>
+          </select>
         </div>
       </div>
 
@@ -88,45 +88,44 @@ export function OrdersTable({ initialOrders }: { initialOrders: Order[] }) {
             </thead>
             <tbody className="divide-y divide-zinc-100">
               {filteredOrders.map((order) => (
-                <tr key={order.id} className="hover:bg-zinc-50">
+                <tr key={order.id} className="hover:bg-zinc-50 transition-colors">
                   <td className="px-4 py-3 text-zinc-500">
                     {new Date(order.createdAt).toLocaleDateString("pt-BR")}
                   </td>
                   <td className="px-4 py-3 font-medium text-zinc-900">
                     {order.fullName}
-                    <div className="text-xs font-normal text-zinc-400">{order.email}</div>
+                    <div className="text-xs font-normal text-zinc-400">
+                      {order.email}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <StatusBadge status={order.status} />
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
-                        {/* Botão Ver Detalhes */}
-                        <Link
+                      <Link
                         href={`/admin/orders/${order.id}`}
-                        className="inline-flex h-8 items-center justify-center rounded-md border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-900 shadow-sm transition-colors hover:bg-zinc-100"
-                        >
-                        Ver
-                        </Link>
-                        
-                        {/* Botão Deletar */}
-                        <button
-                            onClick={() => handleDelete(order.id)}
-                            disabled={loadingDelete === order.id}
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-50"
-                            title="Excluir Pedido"
-                        >
-                            {loadingDelete === order.id ? (
-                                <span className="h-3 w-3 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
-                            ) : (
-                                <Trash2 className="h-4 w-4" />
-                            )}
-                        </button>
+                        className="inline-flex h-8 items-center justify-center rounded-md border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-900 shadow-sm hover:bg-zinc-100"
+                      >
+                        Ver Detalhes
+                      </Link>
+                      
+                      <button
+                        onClick={() => handleDelete(order.id)}
+                        disabled={loadingDelete === order.id}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-red-100 bg-red-50 text-red-600 hover:bg-red-100 hover:border-red-200 disabled:opacity-50"
+                        title="Excluir"
+                      >
+                        {loadingDelete === order.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </button>
                     </div>
                   </td>
                 </tr>
               ))}
-              
               {filteredOrders.length === 0 && (
                 <tr>
                   <td colSpan={4} className="px-4 py-8 text-center text-zinc-400">
@@ -142,7 +141,7 @@ export function OrdersTable({ initialOrders }: { initialOrders: Order[] }) {
   );
 }
 
-// Badge movido para dentro do arquivo Client (ou importe de outro lugar)
+// Badge dentro do componente ou importado
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     pending_payment: "bg-yellow-100 text-yellow-700",
@@ -151,7 +150,7 @@ function StatusBadge({ status }: { status: string }) {
     refused: "bg-red-100 text-red-700",
   };
   const labels: Record<string, string> = {
-    pending_payment: "Aguardando Pagamento",
+    pending_payment: "Aguardando Pagto",
     paid_pending_review: "Pago / Revisar",
     completed: "Enviado",
     refused: "Cancelado",
