@@ -60,11 +60,9 @@ export async function createCheckoutForOrder({
       cpfCnpj: cpfCnpj,
     }),
   }).catch((err) => {
-     // Se der erro (ex: email ja existe), o ideal seria buscar o cliente.
-     // Para simplificar no MVP, se falhar, tentamos buscar pelo email ou seguimos erro.
-     // Uma estratégia segura é não falhar totalmente se o cliente já existe, mas o Asaas retorna o ID no erro as vezes.
-     // Aqui vamos deixar o erro explodir para você ver se o CPF for inválido.
-     throw err; 
+      // Se der erro (ex: email ja existe), o ideal seria buscar o cliente.
+      // Para simplificar no MVP, se falhar, tentamos buscar pelo email ou seguimos erro.
+      throw err; 
   });
 
   // 2. Criar a Cobrança (Payment)
@@ -79,7 +77,12 @@ export async function createCheckoutForOrder({
         dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
         description: `Treino Personalizado - Pedido ${orderId}`,
         externalReference: orderId,
-        postalService: false
+        postalService: false,
+        // ✅ NOVO: Redirecionamento Automático para a Página de Obrigado
+        callback: {
+            successUrl: `${appBaseUrl}/obrigado`,
+            autoRedirect: true
+        }
       }),
     }
   );
