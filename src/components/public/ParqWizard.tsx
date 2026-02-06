@@ -177,7 +177,7 @@ export default function ParqWizard() {
           </ul>
           <div className="mt-4 pt-3 border-t border-zinc-700 flex justify-between items-center">
             <span className="text-zinc-400 line-through text-xs">de R$ 150,00</span>
-            <span className="text-white font-black text-lg">POR R$ 100,00</span>
+            <span className="text-white font-black text-lg">POR R$ 50,00</span>
           </div>
         </div>
       </CardHeader>
@@ -297,7 +297,7 @@ export default function ParqWizard() {
             <div className="flex justify-between gap-3 pt-4">
               <Button variant="outline" onClick={() => setStep(2)} className="w-1/3" disabled={loading}>Voltar</Button>
               <Button onClick={form.handleSubmit(onSubmit)} disabled={loading} className="w-2/3 bg-green-600 hover:bg-green-700 font-bold shadow-md">
-                {loading ? "Processando..." : "Ir para Pagamento (R$ 100,00)"}
+                {loading ? "Processando..." : "Ir para Pagamento (R$ 50,00)"}
               </Button>
             </div>
           </>
