@@ -33,6 +33,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             <div className="space-y-1">
               <NavItem href="/admin" label="Pedidos" />
+              <NavItem href="/admin/planilhas" label="Planilhas prontas" />
               <NavItem href="/" label="Landing" />
             </div>
 

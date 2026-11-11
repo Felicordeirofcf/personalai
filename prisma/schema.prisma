@@ -17,43 +17,102 @@ enum OrderStatus {
 }
 
 model Order {
-  id               String      @id @default(cuid())
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
-  status           OrderStatus @default(draft)
+  id        String      @id @default(cuid())
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  status    OrderStatus @default(draft)
 
-  fullName         String
-  email            String
-  whatsapp         String
+  fullName String
+  email    String
+  whatsapp String
 
-  goal             String
-  location         String
-  frequency        String
-  experience       String
-  timePerDayMin    Int
-  equipment        String
-  limitations      String
-  parqJson         Json
+  goal          String
+  location      String
+  frequency     String
+  experience    String
+  timePerDayMin Int
+  equipment     String
+  limitations   String
+  parqJson      Json
 
-  priceCents       Int
-  paymentNote      String?
-  receiptPath      String?
+  priceCents  Int
+  paymentNote String?
+  receiptPath String?
 
   // NOVO (pagamento)
-  paymentProvider  String?     // "asaas"
-  paymentRef       String?     // id da cobrança/link no Asaas
-  paymentUrl       String?     // url do checkout/link
-  paidAt           DateTime?
+  paymentProvider String? // "asaas"
+  paymentRef      String? // id da cobrança/link no Asaas
+  paymentUrl      String? // url do checkout/link
+  paidAt          DateTime?
 
   aiDraftJson      Json?
   finalWorkoutJson Json?
   sentAt           DateTime?
 
   // ✅ Asaas
-  asaasCheckoutId    String?
-  asaasCheckoutUrl   String?
-  asaasExternalRef   String?  // normalmente igual ao seu order.id
-  asaasPaymentId     String?  // vem via webhook quando gerar cobrança/pagamento
+  asaasCheckoutId  String?
+  asaasCheckoutUrl String?
+  asaasExternalRef String? // normalmente igual ao seu order.id
+  asaasPaymentId   String? // vem via webhook quando gerar cobrança/pagamento
 }
 
+// =====================================================
+// Planilhas prontas (produtos digitais com entrega automática)
+// =====================================================
 
+enum PurchaseStatus {
+  pending_payment
+  paid
+  canceled
+}
+
+model Product {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  slug           String   @unique
+  title          String
+  subtitle       String   @default("")
+  description    String   @default("")
+  highlights     String[] @default([])
+  level          String   @default("")
+  location       String   @default("")
+  durationWeeks  Int?
+  priceCents     Int
+  compareAtCents Int?
+
+  // Texto do treino que vai para o PDF entregue ao comprador
+  content String @default("")
+
+  active    Boolean @default(false)
+  sortOrder Int     @default(0)
+
+  purchases ProductPurchase[]
+}
+
+model ProductPurchase {
+  id        String         @id @default(cuid())
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  status    PurchaseStatus @default(pending_payment)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  fullName   String
+  email      String
+  whatsapp   String
+  priceCents Int
+
+  // Token secreto usado no link de acesso/download
+  accessToken String @unique
+
+  asaasPaymentId String?
+  paymentUrl     String?
+  paidAt         DateTime?
+  downloadCount  Int       @default(0)
+
+  @@index([productId])
+  @@index([email])
+}

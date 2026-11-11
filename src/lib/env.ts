@@ -14,4 +14,13 @@ const envSchema = z.object({
   APP_BASE_URL: z.string().default("http://localhost:3000"),
 });
 
-export const env = envSchema.parse(process.env);
+type Env = z.infer<typeof envSchema>;
+let cached: Env | null = null;
+
+// Valida só quando alguma variável é lida (o build não precisa das chaves de produção)
+export const env = new Proxy({} as Env, {
+  get(_target, key: string) {
+    cached ??= envSchema.parse(process.env);
+    return cached[key as keyof Env];
+  },
+});

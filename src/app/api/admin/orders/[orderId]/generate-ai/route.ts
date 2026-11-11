@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Criado só na hora do uso: o build não precisa da chave da OpenAI
+function getOpenAI() {
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+}
 
 export async function POST(
   req: Request,
@@ -74,9 +75,11 @@ export async function POST(
       PASSO 1: ESCOLHA A METODOLOGIA E O SPLIT
       - Analise o Nível (${order.experience}) e Frequência (${order.frequency}).
       - Escolha 1 metodologia da lista acima.
-      - Adapte ao SEXO provável (Pelo nome "${order.fullName}"):
-        * Feminino: Ênfase natural em inferiores/glúteos (salvo se o objetivo for outro).
-        * Masculino: Distribuição equilibrada ou ênfase em tronco.
+      - O treino deve ser SEMPRE COMPLETO E EQUILIBRADO: todos os grupos musculares
+        (peito, costas, ombros, braços, quadríceps, posteriores, glúteos, panturrilhas e core)
+        trabalhados na semana, com volume proporcional entre superiores e inferiores.
+        * NÃO deduza sexo/gênero pelo nome e NÃO dê ênfase a um grupo muscular por esse motivo.
+        * Ajuste a estratégia apenas pelo Objetivo, Nível, Frequência, Tempo, Local e Limitações informados.
       - Adapte ao LOCAL (${order.location}):
         * "Em casa": PROIBIDO citar máquinas. Use halteres, elásticos e peso do corpo. Foco em volume metabólico.
         * "Academia": Use o arsenal completo.
@@ -104,7 +107,7 @@ export async function POST(
       OBSERVAÇÃO FINAL: Seja técnico mas acessível. Se usar termos como "RIR" ou "Falha", explique brevemente.
     `;
 
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: promptSistema },

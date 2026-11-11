@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { markPurchasePaidByRef } from "@/lib/purchases";
 
 // Endpoint que o Asaas chama automaticamente quando um pagamento muda de status
 export async function POST(req: Request) {
@@ -17,7 +18,10 @@ export async function POST(req: Request) {
     if (confirmedEvents.includes(event)) {
       // Atualiza o status do pedido no banco de dados
       // Usamos o 'externalReference' (que é o ID do nosso pedido)
-      if (payment.externalReference) {
+      // Compra de planilha pronta? (entrega automática)
+      if (payment.externalReference && (await markPurchasePaidByRef(payment.externalReference, payment.id))) {
+        console.log(`Compra de planilha ${payment.externalReference} marcada como PAGA.`);
+      } else if (payment.externalReference) {
         await prisma.order.update({
           where: { id: payment.externalReference },
           data: {

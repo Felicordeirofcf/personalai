@@ -6,10 +6,11 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { email, password } = body;
 
-    const validEmail = process.env.ADMIN_EMAIL || "admin@local";
-    const validPass = process.env.ADMIN_PASSWORD || "admin";
+    const validEmail = process.env.ADMIN_EMAIL;
+    const validPass = process.env.ADMIN_PASSWORD;
 
-    if (email !== validEmail || password !== validPass) {
+    // Sem credenciais configuradas, o login fica bloqueado (nunca usar senha padrão)
+    if (!validEmail || !validPass || email !== validEmail || password !== validPass) {
       return NextResponse.json(
         { error: "Credenciais inválidas" },
         { status: 401 }

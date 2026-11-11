@@ -92,3 +92,61 @@ export async function createCheckoutForOrder({
     checkoutUrl: payment.invoiceUrl,
   };
 }
+// =====================================================
+// Cobrança genérica (usada pelas planilhas prontas)
+// =====================================================
+
+type CreatePaymentParams = {
+  externalReference: string;
+  description: string;
+  fullName: string;
+  email: string;
+  whatsapp: string;
+  cpfCnpj: string;
+  valueBRL: number;
+  successUrl: string;
+};
+
+export async function createPayment({
+  externalReference,
+  description,
+  fullName,
+  email,
+  whatsapp,
+  cpfCnpj,
+  valueBRL,
+  successUrl,
+}: CreatePaymentParams): Promise<{ id: string; invoiceUrl: string }> {
+  const customer = await asaasFetch<{ id: string }>("/customers", {
+    method: "POST",
+    body: JSON.stringify({ name: fullName, email, mobilePhone: whatsapp, cpfCnpj }),
+  });
+
+  const payment = await asaasFetch<{ id: string; invoiceUrl: string }>("/payments", {
+    method: "POST",
+    body: JSON.stringify({
+      customer: customer.id,
+      billingType: "UNDEFINED",
+      value: valueBRL,
+      dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      description,
+      externalReference,
+      postalService: false,
+      callback: { successUrl, autoRedirect: true },
+    }),
+  });
+
+  return { id: payment.id, invoiceUrl: payment.invoiceUrl };
+}
+
+// Consulta o status de uma cobrança (fallback caso o webhook atrase)
+export async function getPaymentStatus(paymentId: string): Promise<string | null> {
+  try {
+    const p = await asaasFetch<{ status: string }>(`/payments/${paymentId}`);
+    return p.status ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export const ASAAS_PAID_STATUSES = new Set(["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"]);
