@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { markPurchasePaidByRef } from "@/lib/purchases";
 
 export async function POST(req: Request) {
   try {
@@ -21,6 +22,11 @@ export async function POST(req: Request) {
     const paidEvents = new Set(["PAYMENT_RECEIVED", "PAYMENT_CONFIRMED"]);
 
     if (paidEvents.has(event) && paymentId) {
+      // Compra de planilha pronta? (entrega automática)
+      if (externalRef && (await markPurchasePaidByRef(String(externalRef), String(paymentId)))) {
+        return NextResponse.json({ ok: true }, { status: 200 });
+      }
+
       // ideal: externalReference = order.id
       let order = externalRef
         ? await prisma.order.findUnique({ where: { id: String(externalRef) } })
