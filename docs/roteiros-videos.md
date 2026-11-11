@@ -48,11 +48,11 @@ A seção de vídeos só aparece quando a lista tem pelo menos um vídeo.
 > **Corpo:** Erro 1: joelho caindo para dentro (mostre errado ✗ e certo ✓). Erro 2: descer pouco. Erro 3: tirar o calcanhar do chão.
 > **CTA:** "Na minha planilha de hipertrofia, cada exercício vem com a execução certa. Link na bio."
 
-## 3. "Treino de glúteo em 4 exercícios", 40 s
+## 3. "Treino completo em 4 dias", 40 s
 
-> **Gancho:** "Treino de glúteo que eu passo pras minhas alunas."
-> **Corpo:** Elevação pélvica, búlgaro, abdução e coice na polia, uns 5 s de cada mostrando execução, com séries e repetições na legenda.
-> **CTA:** "O programa completo de 8 semanas está na planilha Glúteos & Pernas. Link na bio."
+> **Gancho:** "Treina 4 vezes por semana? Divide assim."
+> **Corpo:** Mostre a divisão Superior/Inferior: 2 ou 3 exercícios de cada dia, uns 5 s cada, com séries e repetições na legenda. Explique que cada músculo é treinado 2 vezes por semana.
+> **CTA:** "O programa completo de 10 semanas está na planilha Hipertrofia Intermediário. Link na bio."
 
 ## 4. "Iniciante: comece por aqui", 30 s
 

@@ -57,56 +57,63 @@ TREINO B
 `,
   },
   {
-    slug: "gluteos-e-pernas-academia",
-    title: "Glúteos & Pernas — Academia",
-    subtitle: "8 semanas com ênfase em glúteos e posteriores, sem abandonar o resto do corpo.",
+    slug: "hipertrofia-intermediario-academia",
+    title: "Hipertrofia Intermediário — Academia",
+    subtitle: "10 semanas de treino completo para quem já treina e quer voltar a evoluir.",
     level: "Intermediário",
     location: "Academia",
-    durationWeeks: 8,
+    durationWeeks: 10,
     priceCents: 3700,
     compareAtCents: 5700,
     sortOrder: 2,
     highlights: [
-      "4 treinos por semana (2 de inferiores)",
-      "Ênfase em glúteo máximo e médio",
-      "Progressão de volume ao longo das 8 semanas",
-      "Superiores mantidos para um físico equilibrado",
+      "4 treinos por semana (Superior / Inferior)",
+      "Corpo todo trabalhado 2x por semana, de forma equilibrada",
+      "Progressão de volume e carga ao longo das 10 semanas",
+      "Semana de recuperação programada (deload)",
     ],
     description:
-      "Para quem já treina há alguns meses e quer priorizar glúteos e pernas. Dois dias de inferiores com focos diferentes e dois dias de superiores.",
+      "Para quem já treina há alguns meses e estagnou. Programa completo e equilibrado: cada grupo muscular é treinado duas vezes por semana, alternando dias de membros superiores e inferiores, com aumento de volume e carga planejado.",
     content: `${COMMON_GUIDE}
 ESTRUTURA: 4x por semana — Seg A / Ter B / Qui C / Sex D
+(A e C = superiores | B e D = inferiores + core)
 
-SEMANAS 1–4: 3 séries | SEMANAS 5–8: 4 séries nos 3 primeiros exercícios de A e C
+SEMANAS 1–4: 3 séries por exercício
+SEMANAS 5–8: 4 séries nos 2 primeiros exercícios de cada treino
+SEMANA 9: DELOAD — mesmas cargas, metade das séries
+SEMANA 10: 3 séries, tente bater suas melhores cargas
 
-TREINO A — GLÚTEOS (foco quadril)
-1. Elevação pélvica com barra .... 8–12 reps  | 2min
-2. Stiff com halteres ............ 8–12 reps  | 2min
-3. Búlgaro (passada parada) ...... 10–12 reps | 90s
-4. Abdução na máquina ............ 15–20 reps | 60s
-5. Coice na polia ................ 12–15 reps | 60s
+TREINO A — SUPERIORES (foco força)
+1. Supino reto com barra ......... 6–8 reps   | 2min
+2. Remada curvada ................ 6–8 reps   | 2min
+3. Desenvolvimento halteres ...... 8–10 reps  | 90s
+4. Puxada frontal ................ 8–10 reps  | 90s
+5. Rosca direta .................. 10–12 reps | 60s
+6. Tríceps testa ................. 10–12 reps | 60s
 
-TREINO B — SUPERIORES
-1. Puxada frontal ................ 10–12 reps | 90s
-2. Supino inclinado halteres ..... 10–12 reps | 90s
-3. Remada curvada ................ 10–12 reps | 90s
-4. Elevação lateral .............. 12–15 reps | 60s
-5. Tríceps corda ................. 12–15 reps | 60s
+TREINO B — INFERIORES (foco força) + CORE
+1. Agachamento livre/smith ....... 6–8 reps   | 2min
+2. Stiff com barra ............... 8–10 reps  | 2min
+3. Leg press 45º ................. 10–12 reps | 90s
+4. Mesa flexora .................. 10–12 reps | 60s
+5. Panturrilha em pé ............. 12–15 reps | 45s
+6. Prancha ....................... 30–45s     | 45s
 
-TREINO C — PERNAS (foco joelho + glúteo)
-1. Agachamento livre/smith ....... 8–10 reps  | 2min
-2. Leg press pés altos ........... 10–12 reps | 90s
-3. Cadeira extensora ............. 12–15 reps | 60s
-4. Mesa flexora .................. 12–15 reps | 60s
-5. Abdução em pé na polia ........ 15 reps    | 45s
-6. Panturrilha sentada ........... 15–20 reps | 45s
-
-TREINO D — SUPERIORES + CORE
-1. Remada baixa .................. 10–12 reps | 90s
-2. Desenvolvimento halteres ...... 10–12 reps | 90s
+TREINO C — SUPERIORES (foco volume)
+1. Supino inclinado halteres ..... 10–12 reps | 90s
+2. Remada baixa .................. 10–12 reps | 90s
 3. Crucifixo máquina ............. 12–15 reps | 60s
-4. Rosca alternada ............... 12–15 reps | 60s
-5. Prancha lateral ............... 30s cada   | 45s
+4. Pulldown braços estendidos .... 12–15 reps | 60s
+5. Elevação lateral .............. 12–15 reps | 60s
+6. Rosca martelo + tríceps corda . 12–15 reps | 60s (bi-set)
+
+TREINO D — INFERIORES (foco volume) + CORE
+1. Passada/afundo com halteres ... 10–12 reps cada perna | 90s
+2. Elevação pélvica .............. 10–12 reps | 90s
+3. Cadeira extensora ............. 12–15 reps | 60s
+4. Cadeira flexora ............... 12–15 reps | 60s
+5. Panturrilha sentada ........... 15–20 reps | 45s
+6. Abdominal na polia ............ 12–15 reps | 45s
 `,
   },
   {
