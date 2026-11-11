@@ -19,7 +19,7 @@ Sistema completo para automação de consultoria de personal trainer. A aplicaç
   - **Ações:** Visualizar detalhes, Excluir pedidos e Aprovação manual de pagamento.
 - **Geração de Treino com IA:**
   - Integração com **OpenAI (GPT-4o)**.
-  - Prompt inteligente que analisa: Frequência semanal (define divisão AB, ABC, ABCD), Gênero (ênfase muscular) e Limitações físicas.
+  - Prompt inteligente que analisa: Objetivo, nível, frequência semanal (define divisão AB, ABC, ABCD) e limitações físicas — sempre com treino completo e equilibrado.
   - Editor de texto para refinar o treino antes de salvar.
 
 ### 📄 Geração e Entrega

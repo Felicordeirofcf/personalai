@@ -74,9 +74,11 @@ export async function POST(
       PASSO 1: ESCOLHA A METODOLOGIA E O SPLIT
       - Analise o Nível (${order.experience}) e Frequência (${order.frequency}).
       - Escolha 1 metodologia da lista acima.
-      - Adapte ao SEXO provável (Pelo nome "${order.fullName}"):
-        * Feminino: Ênfase natural em inferiores/glúteos (salvo se o objetivo for outro).
-        * Masculino: Distribuição equilibrada ou ênfase em tronco.
+      - O treino deve ser SEMPRE COMPLETO E EQUILIBRADO: todos os grupos musculares
+        (peito, costas, ombros, braços, quadríceps, posteriores, glúteos, panturrilhas e core)
+        trabalhados na semana, com volume proporcional entre superiores e inferiores.
+        * NÃO deduza sexo/gênero pelo nome e NÃO dê ênfase a um grupo muscular por esse motivo.
+        * Ajuste a estratégia apenas pelo Objetivo, Nível, Frequência, Tempo, Local e Limitações informados.
       - Adapte ao LOCAL (${order.location}):
         * "Em casa": PROIBIDO citar máquinas. Use halteres, elásticos e peso do corpo. Foco em volume metabólico.
         * "Academia": Use o arsenal completo.
